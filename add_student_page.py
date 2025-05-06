@@ -1,0 +1,86 @@
+# add_student_page.py
+import json
+from PyQt5.QtWidgets import QWidget, QLabel, QLineEdit, QComboBox, QPushButton, QVBoxLayout, QDateEdit
+from PyQt5.QtCore import QDate
+from PyQt5.QtWidgets import QMessageBox
+
+class AddStudentPage(QWidget):
+    def __init__(self, stacked_widget):
+        super().__init__()
+
+        layout = QVBoxLayout()
+        self.setLayout(layout)
+
+        layout.addWidget(QLabel("הוסף תלמידה"))
+
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("הכנס שם תלמידה")
+        layout.addWidget(self.name_input)
+
+        self.phone_input = QLineEdit()
+        self.phone_input.setPlaceholderText("הכנס מספר פלאפון")
+        layout.addWidget(self.phone_input)
+
+        self.group_input = QComboBox()
+        self.load_groups()
+        layout.addWidget(self.group_input)
+
+        self.payment_status_input = QComboBox()
+        self.payment_status_input.addItems(["חוב", "יתרת זכות", "שולם"])
+        layout.addWidget(self.payment_status_input)
+
+        self.join_date_input = QDateEdit()
+        self.join_date_input.setDate(QDate.currentDate())
+        self.join_date_input.setDisplayFormat("dd/MM/yyyy")
+        layout.addWidget(self.join_date_input)
+
+        add_button: QPushButton = QPushButton("הוסף תלמידה")
+        add_button.clicked.connect(self.add_student)
+        layout.addWidget(add_button)
+
+        back_btn: QPushButton  = QPushButton("⬅ חזרה לעמוד הקבוצות")
+        back_btn.clicked.connect(self.go_back)
+        layout.addWidget(back_btn)
+
+    def load_groups(self):
+        try:
+            with open("data/groups.json", encoding="utf-8") as f:
+                data = json.load(f)
+                groups = data.get("groups", [])
+                self.group_input.addItems(groups)
+        except Exception as e:
+            print(f"Error loading groups: {e}")
+            self.group_input.addItem("Error loading groups")
+
+    def add_student(self):
+        name = self.name_input.text().strip()
+        phone = self.phone_input.text().strip()
+        group = self.group_input.currentText().strip()
+        payment_status = self.payment_status_input.currentText().strip()
+        join_date = self.join_date_input.text().strip()
+
+        if not name or not phone or not group or not payment_status or not join_date:
+            QMessageBox.warning(self, "Error", "Please fill in all fields before adding a student.")
+            return
+
+        print(f"Adding student: {name}, {phone}, {group}, {payment_status}, {join_date}")
+
+        try:
+            with open("data/students.json", encoding="utf-8") as f:
+                students_data = json.load(f)
+            students_data["students"].append({
+                "name": name,
+                "phone": phone,
+                "group": group,
+                "payment_status": payment_status,
+                "join_date": join_date
+            })
+            with open("data/students.json", "w", encoding="utf-8") as f:
+                json.dump(students_data, f, ensure_ascii=False, indent=4)
+                self.go_back()
+        except Exception as e:
+            print(f"Error saving student data: {e}")
+            QMessageBox.critical(self, "Error", f"Error saving data: {e}")
+
+    def go_back(self):
+        self.parent().setCurrentIndex(0)
