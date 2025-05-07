@@ -4,15 +4,44 @@
             "name": "תמר לוי",
             "phone": "0527144636",
             "group": "מחול מודרני",
-            "payment_status": "שולם",
-            "join_date": "17/12/2024"
+            "payment_status": "חוב: 100.0₪",
+            "join_date": "17/12/2024",
+            "payments": [
+                {
+                    "amount": "500",
+                    "date": "17/05/2025",
+                    "payment_method": "מזומן"
+                },
+                {
+                    "amount": "1200",
+                    "date": "19/08/2024",
+                    "payment_method": "אשראי"
+                }
+            ]
         },
         {
             "name": "רחלי חדד",
             "phone": "0583202634",
             "group": "מחול מודרני",
-            "payment_status": "חוב",
-            "join_date": "18/12/2020"
+            "payment_status": "שולם",
+            "join_date": "18/12/2020",
+            "payments": [
+                {
+                    "amount": "300",
+                    "date": "17/18/2025",
+                    "payment_method": "מזומן"
+                },
+                {
+                    "amount": "100",
+                    "date": "07/05/2025",
+                    "payment_method": "אשראי"
+                },
+                {
+                    "amount": "1400",
+                    "date": "18/12/2024",
+                    "payment_method": "מזומן"
+                }
+            ]
         }
     ]
 }

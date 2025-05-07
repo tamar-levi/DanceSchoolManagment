@@ -54,7 +54,7 @@ class StudentsPage(QWidget):
         add_student_btn.clicked.connect(self.show_add_student_form)
         self.layout.addWidget(add_student_btn)
 
-        back_btn: QPushButton  = QPushButton("⬅ חזרה לרשימת הקבוצות")
+        back_btn: QPushButton = QPushButton("⬅ חזרה לרשימת הקבוצות")
         back_btn.clicked.connect(self.go_back)
         self.layout.addWidget(back_btn)
 
@@ -84,14 +84,17 @@ class StudentsPage(QWidget):
         layout.addWidget(QLabel(f"📅 תאריך הצטרפות: {student['join_date']}"))
 
         button_layout = QHBoxLayout()
-        edit_btn: QPushButton  = QPushButton("עריכה")
-        delete_btn: QPushButton  = QPushButton("מחיקה")
+        edit_btn: QPushButton = QPushButton("עריכה")
+        delete_btn: QPushButton = QPushButton("מחיקה")
+        payments_btn: QPushButton = QPushButton("💳 תשלומים")
         button_layout.addWidget(edit_btn)
         button_layout.addWidget(delete_btn)
+        button_layout.addWidget(payments_btn)
         layout.addLayout(button_layout)
 
         edit_btn.clicked.connect(lambda: self.edit_single_student(student))
         delete_btn.clicked.connect(lambda: self.confirm_delete(student['name']))
+        payments_btn.clicked.connect(lambda: self.show_payments(student))
 
         return card
 
@@ -109,13 +112,13 @@ class StudentsPage(QWidget):
         form_layout.addRow("שם:", self.name_input)
         form_layout.addRow("טלפון:", self.phone_input)
         form_layout.addRow("סטטוס תשלום:", self.payment_input)
-        form_layout.addRow("תאריך הצטרפות",self.join_input)
+        form_layout.addRow("תאריך הצטרפות", self.join_input)
 
         self.layout.addLayout(form_layout)
 
         button_layout = QHBoxLayout()
-        save_btn: QPushButton  = QPushButton("שמור")
-        cancel_btn: QPushButton  = QPushButton("ביטול")
+        save_btn: QPushButton = QPushButton("שמור")
+        cancel_btn: QPushButton = QPushButton("ביטול")
         button_layout.addWidget(save_btn)
         button_layout.addWidget(cancel_btn)
         self.layout.addLayout(button_layout)
@@ -188,8 +191,8 @@ class StudentsPage(QWidget):
         self.layout.addLayout(form_layout)
 
         btn_layout = QHBoxLayout()
-        save_btn: QPushButton  = QPushButton("שמור")
-        cancel_btn: QPushButton  = QPushButton("ביטול")
+        save_btn: QPushButton = QPushButton("שמור")
+        cancel_btn: QPushButton = QPushButton("ביטול")
         btn_layout.addWidget(save_btn)
         btn_layout.addWidget(cancel_btn)
         self.layout.addLayout(btn_layout)
@@ -242,6 +245,114 @@ class StudentsPage(QWidget):
             self.show_students()
         except Exception as e:
             print(f"שגיאה במחיקה: {e}")
+
+    def show_payments(self, student):
+        self.clear_layout()
+
+        self.layout.addWidget(QLabel(f"💳 תשלומים עבור {student['name']}"))
+
+        try:
+            payments = student.get('payments', [])
+        except KeyError:
+            payments = []
+
+        if not payments:
+            self.layout.addWidget(QLabel("לא נמצאו תשלומים לתלמידה זו"))
+
+        for payment in payments:
+            payment_info = f"סכום: {payment['amount']} | תאריך: {payment['date']} | אופן תשלום: {payment['payment_method']}"
+            self.layout.addWidget(QLabel(payment_info))
+
+        button_layout = QHBoxLayout()
+        add_payment_btn: QPushButton = QPushButton("הוסף תשלום")
+        back_btn: QPushButton = QPushButton("חזרה לתלמידות")
+        button_layout.addWidget(add_payment_btn)
+        button_layout.addWidget(back_btn)
+        self.layout.addLayout(button_layout)
+
+        add_payment_btn.clicked.connect(lambda: self.show_add_payment_form(student))
+        back_btn.clicked.connect(self.show_students)
+
+    def show_add_payment_form(self, student):
+        self.clear_layout()
+
+        self.layout.addWidget(QLabel(f"💳 הוספת תשלום עבור {student['name']}"))
+
+        form_layout = QFormLayout()
+
+        self.amount_input = QLineEdit()
+        self.date_input = QLineEdit()
+        self.payment_method_input = QLineEdit()
+
+        form_layout.addRow("סכום:", self.amount_input)
+        form_layout.addRow("תאריך:", self.date_input)
+        form_layout.addRow("אופן תשלום:", self.payment_method_input)
+
+        self.layout.addLayout(form_layout)
+
+        button_layout = QHBoxLayout()
+        save_btn: QPushButton = QPushButton("שמור")
+        cancel_btn: QPushButton = QPushButton("ביטול")
+        button_layout.addWidget(save_btn)
+        button_layout.addWidget(cancel_btn)
+        self.layout.addLayout(button_layout)
+
+        save_btn.clicked.connect(lambda: self.save_payment(student, {
+            "amount": self.amount_input.text().strip(),
+            "date": self.date_input.text().strip(),
+            "payment_method": self.payment_method_input.text().strip()
+        }))
+        cancel_btn.clicked.connect(self.show_students)
+
+    def save_payment(self, student, payment_data):
+        if not all(payment_data.values()):
+            QMessageBox.warning(self, "שגיאה", "יש למלא את כל השדות.")
+            return
+
+        try:
+            # טען את תלמידות
+            with open("data/students.json", encoding="utf-8") as f:
+                data = json.load(f)
+                students = data.get("students", [])
+
+            # טען את הקבוצות (שבהן יש את המחירים)
+            with open("data/groups.json", encoding="utf-8") as f:
+                group_data = json.load(f)
+                groups = group_data.get("groups", [])
+
+            for s in students:
+                if s['name'] == student['name']:
+                    s.setdefault("payments", []).append(payment_data)
+
+                    # סכום כולל ששולם
+                    total_paid = sum(
+                        float(p['amount']) for p in s['payments']
+                        if p['amount'].replace('.', '', 1).isdigit()
+                    )
+
+                    # קבל שם קבוצה וחפש את המחיר שלה
+                    group_name = s.get("group")
+                    group = next((g for g in groups if g['name'] == group_name), None)
+
+                    if group:
+                        group_price = float(group.get("price", "0"))
+                        if total_paid >= group_price:
+                            s['payment_status'] = "שולם"
+                        else:
+                            s['payment_status'] = f"חוב: {group_price - total_paid}₪"
+                    else:
+                        s['payment_status'] = "לא נמצא מחיר קבוצה"
+
+                    break
+
+            # שמור את הקובץ
+            with open("data/students.json", 'w', encoding="utf-8") as f:
+                json.dump({"students": students}, f, ensure_ascii=False, indent=4)
+
+            self.show_students()
+
+        except Exception as e:
+            print(f"שגיאה בשמירת תשלום: {e}")
 
     def go_back(self):
         self.stacked_widget.setCurrentIndex(1)

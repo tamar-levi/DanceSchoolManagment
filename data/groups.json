@@ -1,10 +1,20 @@
 {
   "groups": [
     {
+      "id": 1,
       "name": "מחול מודרני",
       "location": "ירושלים",
-      "price": "אביגיל מוזס",
-      "id": 1
+      "price": "1800",
+      "age_group": "18",
+      "teacher": "חיה רוט"
+    },
+    {
+      "id": 2,
+      "name": "היפ הופ",
+      "location": "רמות",
+      "price": "2000",
+      "age_group": "18",
+      "teacher": "מיכל לוין"
     }
   ]
 }

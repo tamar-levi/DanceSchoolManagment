@@ -24,19 +24,19 @@ class AddGroupPage(QWidget):
         self.group_price_input.setPlaceholderText("עלות הקבוצה")
         self.layout.addWidget(self.group_price_input)
 
-        self.group_price_input = QLineEdit()
-        self.group_price_input.setPlaceholderText("קבוצת גילאים")
-        self.layout.addWidget(self.group_price_input)
+        self.group_age_input = QLineEdit()
+        self.group_age_input.setPlaceholderText("קבוצת גילאים")
+        self.layout.addWidget(self.group_age_input)
 
-        self.group_price_input = QLineEdit()
-        self.group_price_input.setPlaceholderText("שם המורה")
-        self.layout.addWidget(self.group_price_input)
+        self.group_teacher_input = QLineEdit()
+        self.group_teacher_input.setPlaceholderText("שם המורה")
+        self.layout.addWidget(self.group_teacher_input)
 
-        self.save_button: QPushButton = QPushButton("שמור קבוצה")
+        self.save_button = QPushButton("שמור קבוצה")
         self.save_button.clicked.connect(self.save_group)
         self.layout.addWidget(self.save_button)
 
-        self.back_button: QPushButton = QPushButton("⬅ חזרה לעמוד הקבוצות")
+        self.back_button = QPushButton("⬅ חזרה לעמוד הקבוצות")
         self.back_button.clicked.connect(self.go_back)
         self.layout.addWidget(self.back_button)
 
@@ -44,19 +44,16 @@ class AddGroupPage(QWidget):
         name = self.group_name_input.text().strip()
         location = self.group_location_input.text().strip()
         price = self.group_price_input.text().strip()
+        age_group = self.group_age_input.text().strip()
+        teacher = self.group_teacher_input.text().strip()
 
-        if not name or not location or not price:
+        if not name or not location or not price or not age_group or not teacher:
             QMessageBox.warning(self, "שגיאה", "נא למלא את כל השדות.")
             return
 
         try:
             with open("data/groups.json", encoding="utf-8") as f:
                 data = json.load(f)
-            attendance_page = AttendancePage(self.stacked_widget)
-            attendance_page.refresh()
-            self.stacked_widget.setCurrentWidget(attendance_page)
-
-
         except Exception:
             data = {"groups": []}
 
@@ -64,10 +61,12 @@ class AddGroupPage(QWidget):
         new_id = max(existing_ids) + 1 if existing_ids else 1
 
         new_group = {
+            "id": new_id,
             "name": name,
             "location": location,
             "price": price,
-            "id": new_id
+            "age_group": age_group,
+            "teacher": teacher
         }
 
         data["groups"].append(new_group)
@@ -80,7 +79,14 @@ class AddGroupPage(QWidget):
             self.group_name_input.clear()
             self.group_location_input.clear()
             self.group_price_input.clear()
+            self.group_age_input.clear()
+            self.group_teacher_input.clear()
             self.go_back()
+
+            attendance_page = AttendancePage(self.stacked_widget)
+            attendance_page.refresh()
+            self.stacked_widget.setCurrentWidget(attendance_page)
+
         except Exception as e:
             QMessageBox.critical(self, "שגיאה", f"שגיאה בשמירת הקובץ: {e}")
 
