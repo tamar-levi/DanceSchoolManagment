@@ -1,47 +1,59 @@
 import json
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QPushButton
+from PyQt5.QtCore import Qt
 from group_attendance_page import GroupAttendancePage
 
 def load_groups():
-    with open("data/groups.json", "r", encoding="utf-8") as file:
-        data = json.load(file)
-        return data["groups"]
-
-def load_students(group_name):
-    with open("data/students.json", "r", encoding="utf-8") as file:
-        students = json.load(file)["students"]
-        return [student for student in students if student["group"] == group_name]
-
-def save_attendance(groups):
-    with open("data/groups.json", "w", encoding="utf-8") as file:
-        json.dump({"groups": groups}, file, ensure_ascii=False, indent=4)
+    try:
+        with open("data/groups.json", "r", encoding="utf-8") as file:
+            data = json.load(file)
+            return data.get("groups", [])
+    except Exception as e:
+        print("שגיאה בטעינת קבוצות:", e)
+        return []
 
 class AttendancePage(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
-        self.groups = load_groups()
-        self.init_ui()
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
 
-    def init_ui(self):
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("בחר קבוצה לניהול נוכחות"))
+    def showEvent(self, event):
+        super().showEvent(event)
+        self.refresh()
 
-        for group in self.groups:
+    def refresh(self):
+        self.clear_layout()
+        groups = load_groups()
+
+        title = QLabel("בחר קבוצה לניהול נוכחות")
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("font-size: 18px; font-weight: bold; margin-bottom: 10px;")
+        self.layout.addWidget(title)
+
+        for group in groups:
             btn: QPushButton = QPushButton(group["name"])
+            btn.setStyleSheet("background-color: #bbdefb; padding: 8px; font-size: 14px;")
             btn.clicked.connect(lambda _, g=group: self.show_group_attendance(g))
-            layout.addWidget(btn)
+            self.layout.addWidget(btn)
 
-        back_btn: QPushButton = QPushButton("חזרה לעמוד הראשי")
+        back_btn: QPushButton = QPushButton("⬅ חזרה לעמוד הראשי")
+        back_btn.setStyleSheet("margin-top: 15px; background-color: #e0e0e0;")
         back_btn.clicked.connect(self.go_home)
-        layout.addWidget(back_btn)
+        self.layout.addWidget(back_btn)
 
-        self.setLayout(layout)
+    def clear_layout(self):
+        while self.layout.count():
+            item = self.layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
 
     def show_group_attendance(self, group):
-        group_attendance_page = GroupAttendancePage(self.stacked_widget, group)
-        self.stacked_widget.addWidget(group_attendance_page)
-        self.stacked_widget.setCurrentWidget(group_attendance_page)
+        page = GroupAttendancePage(self.stacked_widget, group)
+        self.stacked_widget.addWidget(page)
+        self.stacked_widget.setCurrentWidget(page)
 
     def go_home(self):
         self.stacked_widget.setCurrentIndex(0)

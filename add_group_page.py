@@ -1,14 +1,15 @@
 import json
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLineEdit, QPushButton, QMessageBox
+from attendance_page import AttendancePage
 
 class AddGroupPage(QWidget):
     def __init__(self, stacked_widget, groups_page):
         super().__init__()
         self.stacked_widget = stacked_widget
-        self.groups_page = groups_page  # קבלת הפניה לעמוד הקבוצות
+        self.groups_page = groups_page
 
         self.layout = QVBoxLayout()
-        self.layout.setSpacing(6)  # צמצום רווחים בין שדות
+        self.layout.setSpacing(6)
         self.setLayout(self.layout)
 
         self.group_name_input = QLineEdit()
@@ -31,11 +32,11 @@ class AddGroupPage(QWidget):
         self.group_price_input.setPlaceholderText("שם המורה")
         self.layout.addWidget(self.group_price_input)
 
-        self.save_button = QPushButton("שמור קבוצה")
+        self.save_button: QPushButton = QPushButton("שמור קבוצה")
         self.save_button.clicked.connect(self.save_group)
         self.layout.addWidget(self.save_button)
 
-        self.back_button = QPushButton("⬅ חזרה לעמוד הקבוצות")
+        self.back_button: QPushButton = QPushButton("⬅ חזרה לעמוד הקבוצות")
         self.back_button.clicked.connect(self.go_back)
         self.layout.addWidget(self.back_button)
 
@@ -51,10 +52,14 @@ class AddGroupPage(QWidget):
         try:
             with open("data/groups.json", encoding="utf-8") as f:
                 data = json.load(f)
+            attendance_page = AttendancePage(self.stacked_widget)
+            attendance_page.refresh()
+            self.stacked_widget.setCurrentWidget(attendance_page)
+
+
         except Exception:
             data = {"groups": []}
 
-        # יצירת ID חדש
         existing_ids = [group.get("id", 0) for group in data.get("groups", [])]
         new_id = max(existing_ids) + 1 if existing_ids else 1
 
@@ -80,5 +85,5 @@ class AddGroupPage(QWidget):
             QMessageBox.critical(self, "שגיאה", f"שגיאה בשמירת הקובץ: {e}")
 
     def go_back(self):
-        self.groups_page.build_group_buttons()  # רענון הקבוצות
+        self.groups_page.build_group_buttons()
         self.stacked_widget.setCurrentWidget(self.groups_page)

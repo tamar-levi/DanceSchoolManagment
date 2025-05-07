@@ -1,12 +1,16 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QStackedWidget, QHBoxLayout
-from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QPushButton, QLabel, QVBoxLayout,
+    QStackedWidget
+)
+from PyQt5.QtCore import Qt, QPropertyAnimation, QPoint, QSize
 from PyQt5.QtGui import QIcon
+
 from add_student_page import AddStudentPage
 from groups_page import GroupsPage
 from attendance_page import AttendancePage
 from payment_page import PaymentPage
-from PyQt5.QtCore import QSize
+
 
 def set_button_style(btn):
     btn.setStyleSheet("""
@@ -28,14 +32,18 @@ def set_button_style(btn):
 
     btn.clicked.connect(animation.start)
 
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
 
         self.setWindowTitle('זה הריקוד שלך')
-        self.setGeometry(100, 100, 500, 350)
+        self.resize(700, 500)
+        self.setMinimumSize(600, 400)
+        self.setMaximumSize(900, 700)
 
         self.stack = QStackedWidget(self)
+        self.stack.setMinimumSize(600, 400)
 
         self.home_page = self.create_home_page()
         self.groups_page = GroupsPage(self.stack)
@@ -80,6 +88,7 @@ class MainWindow(QWidget):
         layout.addWidget(btn1)
         layout.addWidget(btn2)
         layout.addWidget(btn3)
+        layout.addStretch()
 
         page.setLayout(layout)
         return page

@@ -1,7 +1,7 @@
 import json
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QPushButton, QFrame,
-    QLineEdit, QHBoxLayout, QMessageBox, QFormLayout
+    QLineEdit, QHBoxLayout, QMessageBox, QFormLayout, QScrollArea
 )
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
@@ -19,31 +19,42 @@ class StudentsPage(QWidget):
 
     def show_students(self):
         self.clear_layout()
-        self.layout.addWidget(QLabel(f"📚 תלמידות בקבוצה: {self.group_name}"))
+
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+
+        container_widget = QWidget()
+        scroll_area.setWidget(container_widget)
+
+        container_layout = QVBoxLayout()
+        container_widget.setLayout(container_layout)
+
+        container_layout.addWidget(QLabel(f"📚 תלמידות בקבוצה: {self.group_name}"))
 
         try:
             with open("data/students.json", encoding="utf-8") as f:
                 students = json.load(f).get("students", [])
         except Exception as e:
-            self.layout.addWidget(QLabel("שגיאה בטעינת התלמידות"))
+            container_layout.addWidget(QLabel("שגיאה בטעינת התלמידות"))
             print("Error:", e)
             return
 
         self.current_students = [s for s in students if s.get("group") == self.group_name]
 
         if not self.current_students:
-            self.layout.addWidget(QLabel("אין תלמידות בקבוצה זו"))
+            container_layout.addWidget(QLabel("אין תלמידות בקבוצה זו"))
         else:
             for student in self.current_students:
                 card = self.create_student_card(student)
-                self.layout.addWidget(card)
+                container_layout.addWidget(card)
 
-        # כפתור להוספת תלמידה
-        add_student_btn = QPushButton("➕ הוסף תלמידה")
+        self.layout.addWidget(scroll_area)
+
+        add_student_btn: QPushButton = QPushButton("➕ הוסף תלמידה")
         add_student_btn.clicked.connect(self.show_add_student_form)
         self.layout.addWidget(add_student_btn)
 
-        back_btn = QPushButton("⬅ חזרה לרשימת הקבוצות")
+        back_btn: QPushButton  = QPushButton("⬅ חזרה לרשימת הקבוצות")
         back_btn.clicked.connect(self.go_back)
         self.layout.addWidget(back_btn)
 
@@ -62,8 +73,9 @@ class StudentsPage(QWidget):
 
         icon_label = QLabel()
         pixmap = QPixmap("path_to_icon.png")
-        icon_label.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio))
-        layout.addWidget(icon_label, alignment=Qt.AlignCenter)
+        if not pixmap.isNull():
+            icon_label.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio))
+            layout.addWidget(icon_label, alignment=Qt.AlignCenter)
 
         layout.addWidget(QLabel(f"👤 שם: {student['name']}"))
         layout.addWidget(QLabel(f"📞 טלפון: {student['phone']}"))
@@ -72,8 +84,8 @@ class StudentsPage(QWidget):
         layout.addWidget(QLabel(f"📅 תאריך הצטרפות: {student['join_date']}"))
 
         button_layout = QHBoxLayout()
-        edit_btn = QPushButton("עריכה")
-        delete_btn = QPushButton("מחיקה")
+        edit_btn: QPushButton  = QPushButton("עריכה")
+        delete_btn: QPushButton  = QPushButton("מחיקה")
         button_layout.addWidget(edit_btn)
         button_layout.addWidget(delete_btn)
         layout.addLayout(button_layout)
@@ -97,13 +109,13 @@ class StudentsPage(QWidget):
         form_layout.addRow("שם:", self.name_input)
         form_layout.addRow("טלפון:", self.phone_input)
         form_layout.addRow("סטטוס תשלום:", self.payment_input)
-        form_layout.addRow("תאריך הצטרפות:", self.join_input)
+        form_layout.addRow("תאריך הצטרפות",self.join_input)
 
         self.layout.addLayout(form_layout)
 
         button_layout = QHBoxLayout()
-        save_btn = QPushButton("שמור")
-        cancel_btn = QPushButton("ביטול")
+        save_btn: QPushButton  = QPushButton("שמור")
+        cancel_btn: QPushButton  = QPushButton("ביטול")
         button_layout.addWidget(save_btn)
         button_layout.addWidget(cancel_btn)
         self.layout.addLayout(button_layout)
@@ -176,8 +188,8 @@ class StudentsPage(QWidget):
         self.layout.addLayout(form_layout)
 
         btn_layout = QHBoxLayout()
-        save_btn = QPushButton("שמור")
-        cancel_btn = QPushButton("ביטול")
+        save_btn: QPushButton  = QPushButton("שמור")
+        cancel_btn: QPushButton  = QPushButton("ביטול")
         btn_layout.addWidget(save_btn)
         btn_layout.addWidget(cancel_btn)
         self.layout.addLayout(btn_layout)

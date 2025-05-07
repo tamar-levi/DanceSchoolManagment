@@ -25,7 +25,6 @@ class GroupsPage(QWidget):
             self.layout.addWidget(QLabel("שגיאה בטעינת קבוצות"))
             print("Error reading JSON file:", e)
 
-
         for group in groups:
             btn: QPushButton = QPushButton(group["name"])
             btn.setStyleSheet("background-color: #f8bbd0; padding: 8px; font-size: 14px;")
@@ -54,9 +53,14 @@ class GroupsPage(QWidget):
             self.stacked_widget.addWidget(self.add_group_page)
         self.stacked_widget.setCurrentWidget(self.add_group_page)
 
+    def refresh(self):
+        self.build_group_buttons()
+
     def clear_layout(self):
         while self.layout.count():
             item = self.layout.takeAt(0)
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
+
+

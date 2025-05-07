@@ -50,7 +50,7 @@ class AttendanceTablePage(QWidget):
         save_btn.clicked.connect(self.save_attendance_data)
         layout.addWidget(save_btn)
 
-        back_btn: QPushButton = QPushButton("חזרה לתאריכים")
+        back_btn: QPushButton = QPushButton("חזרה לעמוד הקבוצות")
         back_btn.clicked.connect(self.go_back)
         layout.addWidget(back_btn)
 
