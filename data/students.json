@@ -1,24 +1,24 @@
 {
     "students": [
         {
-            "name": "תמר לוי",
-            "phone": "0527144636",
-            "group": "היפ הופ",
-            "payment_status": "יתרת זכות",
+            "name": "רחלי חדד",
+            "phone": "0583202634",
+            "group": "בלט מודרני",
+            "payment_status": "חוב",
             "join_date": "06/05/2025"
         },
         {
-            "name": "רינה טראב",
-            "phone": "0583265365",
+            "name": "רות",
+            "phone": "0909090",
             "group": "בלט קלאסי",
             "payment_status": "חוב",
-            "join_date": "07/05/2025"
+            "join_date": "06/05/2025"
         },
         {
-            "name": "מיכל כהן",
-            "phone": "0583206365",
-            "group": "בלט קלאסי",
-            "payment_status": "חוב",
+            "name": "יעל",
+            "phone": "089743826",
+            "group": "היפ הופ",
+            "payment_status": "שולם",
             "join_date": "07/05/2025"
         }
     ]
