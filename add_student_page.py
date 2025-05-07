@@ -47,7 +47,8 @@ class AddStudentPage(QWidget):
             with open("data/groups.json", encoding="utf-8") as f:
                 data = json.load(f)
                 groups = data.get("groups", [])
-                self.group_input.addItems(groups)
+                group_names = [group["name"] for group in groups]
+                self.group_input.addItems(group_names)
         except Exception as e:
             print(f"Error loading groups: {e}")
             self.group_input.addItem("Error loading groups")

@@ -24,9 +24,9 @@ class GroupsPage(QWidget):
             print("Error reading JSON file:", e)
 
         for group_name in groups:
-            btn: QPushButton = QPushButton(group_name)
+            btn: QPushButton =  QPushButton(group_name["name"])
             btn.setStyleSheet("background-color: #f8bbd0; padding: 8px; font-size: 14px;")
-            btn.clicked.connect(lambda _, name=group_name: self.show_students(name))
+            btn.clicked.connect(lambda _, name=group_name["name"]: self.show_students(name))
             self.layout.addWidget(btn)
 
         back_btn: QPushButton = QPushButton("חזרה לעמוד הראשי")
