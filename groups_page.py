@@ -1,6 +1,7 @@
 import json
 from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton
 from students_page import StudentsPage
+from add_group_page import AddGroupPage
 
 class GroupsPage(QWidget):
     def __init__(self, stacked_widget):
@@ -8,6 +9,7 @@ class GroupsPage(QWidget):
         self.stacked_widget = stacked_widget
         self.layout = QVBoxLayout()
         self.setLayout(self.layout)
+        self.add_group_page = None
         self.build_group_buttons()
 
     def build_group_buttons(self):
@@ -20,22 +22,22 @@ class GroupsPage(QWidget):
                 groups = data.get("groups", [])
         except Exception as e:
             groups = []
-            self.layout.addWidget(QLabel("Error loading groups"))
+            self.layout.addWidget(QLabel("שגיאה בטעינת קבוצות"))
             print("Error reading JSON file:", e)
 
-        for group_name in groups:
-            btn: QPushButton = QPushButton(group_name)
+        for group in groups:
+            btn = QPushButton(group["name"])
             btn.setStyleSheet("background-color: #f8bbd0; padding: 8px; font-size: 14px;")
-            btn.clicked.connect(lambda _, name=group_name: self.show_students(name))
+            btn.clicked.connect(lambda _, name=group["name"]: self.show_students(name))
             self.layout.addWidget(btn)
 
-        back_btn: QPushButton = QPushButton("חזרה לעמוד הראשי")
+        add_group_button = QPushButton("➕ הוסף קבוצה")
+        add_group_button.clicked.connect(self.add_group_page_func)
+        self.layout.addWidget(add_group_button)
+
+        back_btn = QPushButton("⬅ חזרה לעמוד הראשי")
         back_btn.clicked.connect(self.go_home)
         self.layout.addWidget(back_btn)
-
-        add_student_button: QPushButton = QPushButton("הוסף תלמידה")
-        add_student_button.clicked.connect(self.add_student_page)
-        self.layout.addWidget(add_student_button)
 
     def show_students(self, group_name):
         students_page = StudentsPage(self.stacked_widget, group_name)
@@ -45,8 +47,11 @@ class GroupsPage(QWidget):
     def go_home(self):
         self.stacked_widget.setCurrentIndex(0)
 
-    def add_student_page(self):
-        self.stacked_widget.setCurrentIndex(4)
+    def add_group_page_func(self):
+        if self.add_group_page is None:
+            self.add_group_page = AddGroupPage(self.stacked_widget, self)
+            self.stacked_widget.addWidget(self.add_group_page)
+        self.stacked_widget.setCurrentWidget(self.add_group_page)
 
     def clear_layout(self):
         while self.layout.count():
