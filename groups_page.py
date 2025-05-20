@@ -14,6 +14,11 @@ class GroupsPage(QWidget):
 
     def build_group_buttons(self):
         self.clear_layout()
+        
+        title_label = QLabel("עמוד קבוצות")
+        title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #333; margin-bottom: 10px;")
+        self.layout.addWidget(title_label)
+        
         self.layout.addWidget(QLabel("בחרי קבוצה:"))
 
         try:
@@ -26,16 +31,53 @@ class GroupsPage(QWidget):
             print("Error reading JSON file:", e)
 
         for group in groups:
-            btn: QPushButton = QPushButton(group["name"])
-            btn.setStyleSheet("background-color: #f8bbd0; padding: 8px; font-size: 14px;")
+            btn = QPushButton(group["name"])
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: grey; 
+                    padding: 10px; 
+                    font-size: 14px;
+                    border-radius: 4px;
+                    margin: 3px 0;
+                }
+                QPushButton:hover {
+                    background-color: grey;
+                }
+            """)
             btn.clicked.connect(lambda _, name=group["name"]: self.show_students(name))
             self.layout.addWidget(btn)
 
-        add_group_button: QPushButton = QPushButton("➕ הוסף קבוצה")
+        add_group_button = QPushButton("➕ הוסף קבוצה")
+        add_group_button.setStyleSheet("""
+             QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
         add_group_button.clicked.connect(self.add_group_page_func)
         self.layout.addWidget(add_group_button)
 
-        back_btn: QPushButton = QPushButton("⬅ חזרה לעמוד הראשי")
+        back_btn = QPushButton("⬅ חזרה לעמוד הראשי")
+        back_btn.setStyleSheet("""
+             QPushButton {
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 5px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #27ae60;
+            }
+        """)
         back_btn.clicked.connect(self.go_home)
         self.layout.addWidget(back_btn)
 
@@ -62,5 +104,3 @@ class GroupsPage(QWidget):
             widget = item.widget()
             if widget is not None:
                 widget.deleteLater()
-
-
