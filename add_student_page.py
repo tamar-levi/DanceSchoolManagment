@@ -3,11 +3,18 @@ from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton,
     QVBoxLayout, QDateEdit, QMessageBox, QComboBox
 )
+from PyQt5.QtWidgets import (
+    QWidget, QLabel, QLineEdit, QPushButton,
+    QVBoxLayout, QDateEdit, QMessageBox, QComboBox
+)
 from PyQt5.QtCore import QDate
 
 class AddStudentPage(QWidget):
     def __init__(self, stacked_widget, group_name):
         super().__init__()
+
+        self.stacked_widget = stacked_widget
+        self.group_name = group_name  # מתקבל בפרמטר
 
         self.stacked_widget = stacked_widget
         self.group_name = group_name
@@ -25,18 +32,27 @@ class AddStudentPage(QWidget):
         self.phone_input.setPlaceholderText("הכנס מספר פלאפון")
         layout.addWidget(self.phone_input)
 
+        # תעודת זהות
         self.id_input = QLineEdit()
         self.id_input.setPlaceholderText("הכנס מספר תעודת זהות")
         layout.addWidget(self.id_input)
 
+        # קבוצה
+        self.group_input = QComboBox()
+        self.load_groups()
+        layout.addWidget(self.group_input)
+
+        # סטטוס תשלום
         self.payment_status_input = QComboBox()
         self.payment_status_input.addItems(["חוב", "יתרת זכות", "שולם"])
+        layout.addWidget(QLabel("סטטוס תשלום"))
         layout.addWidget(QLabel("סטטוס תשלום"))
         layout.addWidget(self.payment_status_input)
 
         self.join_date_input = QDateEdit()
         self.join_date_input.setDate(QDate.currentDate())
         self.join_date_input.setDisplayFormat("dd/MM/yyyy")
+        layout.addWidget(QLabel("תאריך הצטרפות"))
         layout.addWidget(QLabel("תאריך הצטרפות"))
         layout.addWidget(self.join_date_input)
 
@@ -89,8 +105,12 @@ class AddStudentPage(QWidget):
                 json.dump(students_data, f, ensure_ascii=False, indent=4)
             QMessageBox.information(self, "הצלחה", "התלמידה נוספה בהצלחה!")
             self.go_back()
+            QMessageBox.information(self, "הצלחה", "התלמידה נוספה בהצלחה!")
+            self.go_back()
         except Exception as e:
+            QMessageBox.critical(self, "שגיאה", f"שגיאה בשמירה: {e}")
             QMessageBox.critical(self, "שגיאה", f"שגיאה בשמירה: {e}")
 
     def go_back(self):
+        self.stacked_widget.setCurrentIndex(0)
         self.stacked_widget.setCurrentIndex(0)
