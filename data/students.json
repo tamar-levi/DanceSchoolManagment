@@ -1,0 +1,34 @@
+{
+    "students": [
+        {
+            "id": "214901134",
+            "name": "תמר לוין",
+            "phone": "0583202635",
+            "group": "היפ הופ",
+            "payment_status": "חוב: 1350.0₪",
+            "join_date": "2025/05/20",
+            "payments": [
+                {
+                    "amount": "150",
+                    "date": "20/05/2025",
+                    "payment_method": "מזומן"
+                }
+            ]
+        },
+        {
+            "id": "032784738",
+            "name": "רחלי חדד",
+            "phone": "0583202634",
+            "group": "היפ הופ",
+            "payment_status": "חוב: 100.0₪",
+            "join_date": "2025/05/20",
+            "payments": [
+                {
+                    "amount": "1400",
+                    "date": "20/05/2025",
+                    "payment_method": "מזומן"
+                }
+            ]
+        }
+    ]
+}

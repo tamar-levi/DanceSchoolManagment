@@ -281,7 +281,7 @@ class StudentsPage(QWidget):
         # Color-code payment status
         if student['payment_status'] == "שולם":
             payment_value.setStyleSheet("color: #2ecc71; font-weight: bold;")
-        elif student['payment_status'] == "חוב":
+        elif student['payment_status'] == "חוב" or "חוב:" in student['payment_status']:
             payment_value.setStyleSheet("color: #e74c3c; font-weight: bold;")
         else:
             payment_value.setStyleSheet("color: #f39c12; font-weight: bold;")
@@ -333,23 +333,47 @@ class StudentsPage(QWidget):
         """)
         delete_btn.setCursor(Qt.PointingHandCursor)
         
+        # Add payments button
+        payments_btn = QPushButton("💳 תשלומים")
+        payments_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #9b59b6;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #8e44ad;
+            }
+        """)
+        payments_btn.setCursor(Qt.PointingHandCursor)
+        
         button_layout.addWidget(edit_btn)
         button_layout.addWidget(delete_btn)
+        button_layout.addWidget(payments_btn)
         
         layout.addLayout(button_layout)
         
         edit_btn.clicked.connect(lambda: self.edit_single_student(student))
-        delete_btn.clicked.connect(lambda: self.confirm_delete(student['id'], student['name']))
+        delete_btn.clicked.connect(lambda: self.confirm_delete(student['name']))
+        payments_btn.clicked.connect(lambda: self.show_payments(student))
         
         return card
 
-    def confirm_delete(self, student_id, student_name):
+    def confirm_delete(self, student_name):
         msg_box = QMessageBox()
         msg_box.setWindowTitle("אישור מחיקה")
         msg_box.setText(f"האם למחוק את התלמידה '{student_name}'?")
         msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
         msg_box.setDefaultButton(QMessageBox.No)
         msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #f5f7fa;
+            }
+            QLabel {
+                color: #2
             QMessageBox {
                 background-color: #f5f7fa;
             }
@@ -379,7 +403,7 @@ class StudentsPage(QWidget):
         
         reply = msg_box.exec_()
         if reply == QMessageBox.Yes:
-            self.delete_student(student_id, student_name)
+            self.delete_student(student_name)
 
     def edit_single_student(self, student):
         self.clear_layout()
@@ -522,7 +546,8 @@ class StudentsPage(QWidget):
                 "phone": phone_edit.text().strip(),
                 "group": group_edit.text().strip(),
                 "payment_status": payment_edit.text().strip(),
-                "join_date": join_edit.text().strip()
+                "join_date": join_edit.text().strip(),
+                "payments": student.get('payments', [])  # שמירת התשלומים הקיימים
             }
         ))
         cancel_btn.clicked.connect(self.show_students)
@@ -531,7 +556,7 @@ class StudentsPage(QWidget):
         QTimer.singleShot(100, self.run_entrance_animation)
 
     def save_student(self, original_name, new_data):
-        if not all(new_data.values()):
+        if not all([new_data['name'], new_data['phone'], new_data['group'], new_data['payment_status'], new_data['join_date']]):
             msg_box = QMessageBox()
             msg_box.setWindowTitle("שגיאה")
             msg_box.setText("יש למלא את כל השדות.")
@@ -632,13 +657,13 @@ class StudentsPage(QWidget):
             msg_box.exec_()
             print(f"שגיאה בשמירה: {e}")
 
-    def delete_student(self, student_id, student_name):
+    def delete_student(self, student_name):
         try:
             with open("data/students.json", encoding="utf-8") as f:
                 data = json.load(f)
                 students = data.get("students", [])
 
-            updated_students = [s for s in students if s['id'] != student_id]
+            updated_students = [s for s in students if s['name'] != student_name]
 
             with open("data/students.json", 'w', encoding="utf-8") as f:
                 json.dump({"students": updated_students}, f, ensure_ascii=False, indent=4)
@@ -701,6 +726,405 @@ class StudentsPage(QWidget):
             """)
             msg_box.exec_()
             print(f"שגיאה במחיקה: {e}")
+
+    # פונקציות חדשות לניהול תשלומים
+    def show_payments(self, student):
+        self.clear_layout()
+        self.cards = []
+        
+        # Header card
+        header_card = AnimatedCard()
+        header_layout = QVBoxLayout(header_card)
+        
+        title = QLabel("💳 תשלומים")
+        title.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        title.setStyleSheet("color: #2c3e50;")
+        title.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(title)
+        
+        subtitle = QLabel(f"עבור {student['name']}")
+        subtitle.setFont(QFont("Segoe UI", 16))
+        subtitle.setStyleSheet("color: #7f8c8d;")
+        subtitle.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(subtitle)
+        
+        self.layout.addWidget(header_card)
+        self.cards.append(header_card)
+        
+        # Payments card
+        payments_card = AnimatedCard()
+        payments_layout = QVBoxLayout(payments_card)
+        payments_layout.setContentsMargins(20, 20, 20, 20)
+        
+        try:
+            payments = student.get('payments', [])
+        except KeyError:
+            payments = []
+            
+        if not payments:
+            empty_label = QLabel("לא נמצאו תשלומים לתלמידה זו")
+            empty_label.setStyleSheet("color: #7f8c8d; font-size: 16px;")
+            empty_label.setAlignment(Qt.AlignCenter)
+            payments_layout.addWidget(empty_label)
+        else:
+            for payment in payments:
+                payment_card = QFrame()
+                payment_card.setStyleSheet("""
+                    QFrame {
+                        background-color: #f8f9fa;
+                        border-radius: 6px;
+                        padding: 10px;
+                        margin: 5px 0;
+                    }
+                """)
+                payment_card_layout = QVBoxLayout(payment_card)
+                payment_card = QFrame()
+                payment_card.setStyleSheet("""
+                    QFrame {
+                        background-color: #f8f9fa;
+                        border-radius: 6px;
+                        padding: 10px;
+                        margin: 5px 0;
+                    }
+                """)
+                payment_card_layout = QVBoxLayout(payment_card)
+                
+                amount_label = QLabel(f"💵 סכום: {payment['amount']}₪")
+                amount_label.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50;")
+                
+                date_label = QLabel(f"📅 תאריך: {payment['date']}")
+                date_label.setStyleSheet("font-size: 14px; color: #7f8c8d;")
+                
+                method_label = QLabel(f"💳 אופן תשלום: {payment['payment_method']}")
+                method_label.setStyleSheet("font-size: 14px; color: #7f8c8d;")
+                
+                payment_card_layout.addWidget(amount_label)
+                payment_card_layout.addWidget(date_label)
+                payment_card_layout.addWidget(method_label)
+                
+                payments_layout.addWidget(payment_card)
+        
+        self.layout.addWidget(payments_card)
+        self.cards.append(payments_card)
+        
+        # Actions card
+        actions_card = AnimatedCard()
+        actions_layout = QHBoxLayout(actions_card)
+        actions_layout.setContentsMargins(15, 15, 15, 15)
+        actions_layout.setSpacing(15)
+        
+        # Add payment button
+        add_payment_btn = QPushButton("➕ הוסף תשלום")
+        add_payment_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #9b59b6;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #8e44ad;
+            }
+        """)
+        add_payment_btn.setCursor(Qt.PointingHandCursor)
+        add_payment_btn.clicked.connect(lambda: self.show_add_payment_form(student))
+        
+        # Back button
+        back_btn = QPushButton("⬅ חזרה לרשימת התלמידות")
+        back_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
+        back_btn.setCursor(Qt.PointingHandCursor)
+        back_btn.clicked.connect(self.show_students)
+        
+        actions_layout.addWidget(add_payment_btn)
+        actions_layout.addWidget(back_btn)
+        
+        self.layout.addWidget(actions_card)
+        self.cards.append(actions_card)
+        
+        # Run entrance animation
+        QTimer.singleShot(100, self.run_entrance_animation)
+
+    def show_add_payment_form(self, student):
+        self.clear_layout()
+        self.cards = []
+        
+        # Header card
+        header_card = AnimatedCard()
+        header_layout = QVBoxLayout(header_card)
+        
+        title = QLabel("💳 הוספת תשלום")
+        title.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        title.setStyleSheet("color: #2c3e50;")
+        title.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(title)
+        
+        subtitle = QLabel(f"עבור {student['name']}")
+        subtitle.setFont(QFont("Segoe UI", 16))
+        subtitle.setStyleSheet("color: #7f8c8d;")
+        subtitle.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(subtitle)
+        
+        self.layout.addWidget(header_card)
+        self.cards.append(header_card)
+        
+        # Form card
+        form_card = AnimatedCard()
+        form_layout = QVBoxLayout(form_card)
+        form_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Create form
+        payment_form = QFormLayout()
+        payment_form.setLabelAlignment(Qt.AlignRight)
+        payment_form.setFormAlignment(Qt.AlignRight)
+        payment_form.setSpacing(15)
+        
+        # Style for form inputs
+        input_style = """
+            QLineEdit {
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                padding: 8px;
+                background-color: #f9f9f9;
+                color: #2c3e50;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #3498db;
+                background-color: white;
+            }
+        """
+        
+        # Create form fields
+        self.amount_input = QLineEdit()
+        self.amount_input.setStyleSheet(input_style)
+        self.amount_input.setMinimumHeight(35)
+        self.amount_input.setPlaceholderText("הכנס סכום (מספר בלבד)")
+        
+        self.date_input = QLineEdit()
+        self.date_input.setStyleSheet(input_style)
+        self.date_input.setMinimumHeight(35)
+        self.date_input.setPlaceholderText("הכנס תאריך (לדוגמה: 01/01/2023)")
+        
+        self.payment_method_input = QLineEdit()
+        self.payment_method_input.setStyleSheet(input_style)
+        self.payment_method_input.setMinimumHeight(35)
+        self.payment_method_input.setPlaceholderText("הכנס אופן תשלום (לדוגמה: מזומן, אשראי)")
+        
+        # Add fields to form
+        payment_form.addRow("סכום:", self.amount_input)
+        payment_form.addRow("תאריך:", self.date_input)
+        payment_form.addRow("אופן תשלום:", self.payment_method_input)
+        
+        form_layout.addLayout(payment_form)
+        self.layout.addWidget(form_card)
+        self.cards.append(form_card)
+        
+        # Buttons card
+        buttons_card = AnimatedCard()
+        buttons_layout = QHBoxLayout(buttons_card)
+        buttons_layout.setContentsMargins(15, 15, 15, 15)
+        buttons_layout.setSpacing(15)
+        
+        # Save button
+        save_btn = QPushButton("שמור תשלום")
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #27ae60;
+            }
+        """)
+        save_btn.setCursor(Qt.PointingHandCursor)
+        
+        # Cancel button
+        cancel_btn = QPushButton("ביטול")
+        cancel_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
+        cancel_btn.setCursor(Qt.PointingHandCursor)
+        
+        buttons_layout.addWidget(save_btn)
+        buttons_layout.addWidget(cancel_btn)
+        
+        self.layout.addWidget(buttons_card)
+        self.cards.append(buttons_card)
+        
+        # Connect buttons
+        save_btn.clicked.connect(lambda: self.save_payment(student, {
+            "amount": self.amount_input.text().strip(),
+            "date": self.date_input.text().strip(),
+            "payment_method": self.payment_method_input.text().strip()
+        }))
+        cancel_btn.clicked.connect(lambda: self.show_payments(student))
+        
+        # Run entrance animation
+        QTimer.singleShot(100, self.run_entrance_animation)
+
+    def save_payment(self, student, payment_data):
+        if not all(payment_data.values()):
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("שגיאה")
+            msg_box.setText("יש למלא את כל השדות.")
+            msg_box.setIcon(QMessageBox.Warning)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #2980b9;
+                }
+            """)
+            msg_box.exec_()
+            return
+
+        try:
+            # טען את תלמידות
+            with open("data/students.json", encoding="utf-8") as f:
+                data = json.load(f)
+                students = data.get("students", [])
+            
+            # טען את הקבוצות (שבהן יש את המחירים)
+            with open("data/groups.json", encoding="utf-8") as f:
+                group_data = json.load(f)
+                groups = group_data.get("groups", [])
+            
+            for s in students:
+                if s['name'] == student['name']:
+                    s.setdefault("payments", []).append(payment_data)
+                    
+                    # סכום כולל ששולם
+                    total_paid = sum(
+                        float(p['amount']) for p in s['payments']
+                        if p['amount'].replace('.', '', 1).isdigit()
+                    )
+                    
+                    # קבל שם קבוצה וחפש את המחיר שלה
+                    group_name = s.get("group")
+                    group = next((g for g in groups if g['name'] == group_name), None)
+                    
+                    if group:
+                        group_price = float(group.get("price", "0"))
+                        if total_paid >= group_price:
+                            s['payment_status'] = "שולם"
+                        else:
+                            s['payment_status'] = f"חוב: {group_price - total_paid}₪"
+                    else:
+                        s['payment_status'] = "לא נמצא מחיר קבוצה"
+                    break
+            
+            # שמור את הקובץ
+            with open("data/students.json", 'w', encoding="utf-8") as f:
+                json.dump({"students": students}, f, ensure_ascii=False, indent=4)
+            
+            # Success message
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("הצלחה")
+            msg_box.setText("התשלום נשמר בהצלחה!")
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #2ecc71;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #27ae60;
+                }
+            """)
+            msg_box.exec_()
+            
+            # חזרה לעמוד התשלומים
+            self.show_payments(student)
+            
+        except Exception as e:
+            # Error message
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("שגיאה")
+            msg_box.setText(f"שגיאה בשמירת תשלום: {e}")
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #e74c3c;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #c0392b;
+                }
+            """)
+            msg_box.exec_()
+            print(f"שגיאה בשמירת תשלום: {e}")
 
     def go_back(self):
         self.stacked_widget.setCurrentIndex(1)
