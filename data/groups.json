@@ -6,7 +6,11 @@
       "location": "ירושלים",
       "price": "1800",
       "age_group": "18",
-      "teacher": "חיה רוט"
+      "teacher": "חיה רוט",
+      "students": [
+        { "id": 1, "name": "שרה כהן" },
+        { "id": 2, "name": "דבורה לוי" }
+      ]
     },
     {
       "id": 2,
@@ -14,7 +18,11 @@
       "location": "רמות",
       "price": "2000",
       "age_group": "18",
-      "teacher": "מיכל לוין"
+      "teacher": "מיכל לוין",
+      "students": [
+        { "id": 3, "name": "רות כהן" },
+        { "id": 4, "name": "יעל מזרחי" }
+      ]
     }
   ]
 }
