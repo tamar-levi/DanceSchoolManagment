@@ -5,6 +5,7 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QPixmap
 from PyQt5.QtCore import Qt
+from add_student_page import AddStudentPage
 
 
 class StudentsPage(QWidget):
@@ -51,7 +52,7 @@ class StudentsPage(QWidget):
         self.layout.addWidget(scroll_area)
 
         add_student_btn: QPushButton = QPushButton("➕ הוסף תלמידה")
-        add_student_btn.clicked.connect(self.show_add_student_form)
+        add_student_btn.clicked.connect(self.go_to_add_student_page)
         self.layout.addWidget(add_student_btn)
 
         back_btn: QPushButton = QPushButton("⬅ חזרה לרשימת הקבוצות")
@@ -86,80 +87,14 @@ class StudentsPage(QWidget):
         button_layout = QHBoxLayout()
         edit_btn: QPushButton = QPushButton("עריכה")
         delete_btn: QPushButton = QPushButton("מחיקה")
-        payments_btn: QPushButton = QPushButton("💳 תשלומים")
         button_layout.addWidget(edit_btn)
         button_layout.addWidget(delete_btn)
-        button_layout.addWidget(payments_btn)
         layout.addLayout(button_layout)
 
         edit_btn.clicked.connect(lambda: self.edit_single_student(student))
         delete_btn.clicked.connect(lambda: self.confirm_delete(student['name']))
-        payments_btn.clicked.connect(lambda: self.show_payments(student))
 
         return card
-
-    def show_add_student_form(self):
-        self.clear_layout()
-        self.layout.addWidget(QLabel("➕ הוספת תלמידה חדשה"))
-
-        form_layout = QFormLayout()
-
-        self.name_input = QLineEdit()
-        self.phone_input = QLineEdit()
-        self.payment_input = QLineEdit()
-        self.join_input = QLineEdit()
-
-        form_layout.addRow("שם:", self.name_input)
-        form_layout.addRow("טלפון:", self.phone_input)
-        form_layout.addRow("סטטוס תשלום:", self.payment_input)
-        form_layout.addRow("תאריך הצטרפות", self.join_input)
-
-        self.layout.addLayout(form_layout)
-
-        button_layout = QHBoxLayout()
-        save_btn: QPushButton = QPushButton("שמור")
-        cancel_btn: QPushButton = QPushButton("ביטול")
-        button_layout.addWidget(save_btn)
-        button_layout.addWidget(cancel_btn)
-        self.layout.addLayout(button_layout)
-
-        save_btn.clicked.connect(self.save_new_student)
-        cancel_btn.clicked.connect(self.show_students)
-
-    def save_new_student(self):
-        name = self.name_input.text().strip()
-        phone = self.phone_input.text().strip()
-        payment_status = self.payment_input.text().strip()
-        join_date = self.join_input.text().strip()
-
-        if not name or not phone or not payment_status or not join_date:
-            QMessageBox.warning(self, "שגיאה", "יש למלא את כל השדות.")
-            return
-
-        new_student = {
-            "name": name,
-            "phone": phone,
-            "group": self.group_name,
-            "payment_status": payment_status,
-            "join_date": join_date
-        }
-
-        try:
-            with open("data/students.json", encoding="utf-8") as f:
-                data = json.load(f)
-                students = data.get("students", [])
-        except Exception:
-            students = []
-
-        students.append(new_student)
-
-        try:
-            with open("data/students.json", 'w', encoding="utf-8") as f:
-                json.dump({"students": students}, f, ensure_ascii=False, indent=4)
-
-            self.show_students()
-        except Exception as e:
-            print("Error saving new student:", e)
 
     def confirm_delete(self, student_name):
         reply = QMessageBox.question(
@@ -246,116 +181,13 @@ class StudentsPage(QWidget):
         except Exception as e:
             print(f"שגיאה במחיקה: {e}")
 
-    def show_payments(self, student):
-        self.clear_layout()
-
-        self.layout.addWidget(QLabel(f"💳 תשלומים עבור {student['name']}"))
-
-        try:
-            payments = student.get('payments', [])
-        except KeyError:
-            payments = []
-
-        if not payments:
-            self.layout.addWidget(QLabel("לא נמצאו תשלומים לתלמידה זו"))
-
-        for payment in payments:
-            payment_info = f"סכום: {payment['amount']} | תאריך: {payment['date']} | אופן תשלום: {payment['payment_method']}"
-            self.layout.addWidget(QLabel(payment_info))
-
-        button_layout = QHBoxLayout()
-        add_payment_btn: QPushButton = QPushButton("הוסף תשלום")
-        back_btn: QPushButton = QPushButton("חזרה לתלמידות")
-        button_layout.addWidget(add_payment_btn)
-        button_layout.addWidget(back_btn)
-        self.layout.addLayout(button_layout)
-
-        add_payment_btn.clicked.connect(lambda: self.show_add_payment_form(student))
-        back_btn.clicked.connect(self.show_students)
-
-    def show_add_payment_form(self, student):
-        self.clear_layout()
-
-        self.layout.addWidget(QLabel(f"💳 הוספת תשלום עבור {student['name']}"))
-
-        form_layout = QFormLayout()
-
-        self.amount_input = QLineEdit()
-        self.date_input = QLineEdit()
-        self.payment_method_input = QLineEdit()
-
-        form_layout.addRow("סכום:", self.amount_input)
-        form_layout.addRow("תאריך:", self.date_input)
-        form_layout.addRow("אופן תשלום:", self.payment_method_input)
-
-        self.layout.addLayout(form_layout)
-
-        button_layout = QHBoxLayout()
-        save_btn: QPushButton = QPushButton("שמור")
-        cancel_btn: QPushButton = QPushButton("ביטול")
-        button_layout.addWidget(save_btn)
-        button_layout.addWidget(cancel_btn)
-        self.layout.addLayout(button_layout)
-
-        save_btn.clicked.connect(lambda: self.save_payment(student, {
-            "amount": self.amount_input.text().strip(),
-            "date": self.date_input.text().strip(),
-            "payment_method": self.payment_method_input.text().strip()
-        }))
-        cancel_btn.clicked.connect(self.show_students)
-
-    def save_payment(self, student, payment_data):
-        if not all(payment_data.values()):
-            QMessageBox.warning(self, "שגיאה", "יש למלא את כל השדות.")
-            return
-
-        try:
-            # טען את תלמידות
-            with open("data/students.json", encoding="utf-8") as f:
-                data = json.load(f)
-                students = data.get("students", [])
-
-            # טען את הקבוצות (שבהן יש את המחירים)
-            with open("data/groups.json", encoding="utf-8") as f:
-                group_data = json.load(f)
-                groups = group_data.get("groups", [])
-
-            for s in students:
-                if s['name'] == student['name']:
-                    s.setdefault("payments", []).append(payment_data)
-
-                    # סכום כולל ששולם
-                    total_paid = sum(
-                        float(p['amount']) for p in s['payments']
-                        if p['amount'].replace('.', '', 1).isdigit()
-                    )
-
-                    # קבל שם קבוצה וחפש את המחיר שלה
-                    group_name = s.get("group")
-                    group = next((g for g in groups if g['name'] == group_name), None)
-
-                    if group:
-                        group_price = float(group.get("price", "0"))
-                        if total_paid >= group_price:
-                            s['payment_status'] = "שולם"
-                        else:
-                            s['payment_status'] = f"חוב: {group_price - total_paid}₪"
-                    else:
-                        s['payment_status'] = "לא נמצא מחיר קבוצה"
-
-                    break
-
-            # שמור את הקובץ
-            with open("data/students.json", 'w', encoding="utf-8") as f:
-                json.dump({"students": students}, f, ensure_ascii=False, indent=4)
-
-            self.show_students()
-
-        except Exception as e:
-            print(f"שגיאה בשמירת תשלום: {e}")
-
     def go_back(self):
         self.stacked_widget.setCurrentIndex(1)
+
+    def go_to_add_student_page(self):
+        add_page = AddStudentPage(self.stacked_widget, self.group_name)
+        self.stacked_widget.insertWidget(4, add_page)
+        self.stacked_widget.setCurrentWidget(add_page)
 
     def clear_layout(self):
         while self.layout.count():

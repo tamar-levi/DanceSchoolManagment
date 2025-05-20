@@ -49,10 +49,10 @@ class MainWindow(QWidget):
         self.groups_page = GroupsPage(self.stack)
         self.attendance_page = AttendancePage(self.stack)
         self.payment_page = PaymentPage(self.stack)
-        self.add_student_page = AddStudentPage(self.stack)
+        self.add_student_page = AddStudentPage(self.stack, "ברירת מחדל")  # ← הוספנו את שם הקבוצה
 
         self.stack.addWidget(self.home_page)         # index 0
-        self.stack.addWidget(self.groups_page)      # index 1
+        self.stack.addWidget(self.groups_page)       # index 1
         self.stack.addWidget(self.attendance_page)   # index 2
         self.stack.addWidget(self.payment_page)      # index 3
         self.stack.addWidget(self.add_student_page)  # index 4
