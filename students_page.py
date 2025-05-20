@@ -1,11 +1,33 @@
 import json
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QVBoxLayout, QPushButton, QFrame,
-    QLineEdit, QHBoxLayout, QMessageBox, QFormLayout, QScrollArea
+    QLineEdit, QHBoxLayout, QMessageBox, QFormLayout, QScrollArea,
+    QGraphicsDropShadowEffect, QSpacerItem, QSizePolicy
 )
-from PyQt5.QtGui import QPixmap
-from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap, QFont, QColor
+from PyQt5.QtCore import Qt, QPropertyAnimation, QEasingCurve, QPoint, QTimer, QSize
 from add_student_page import AddStudentPage
+
+
+class AnimatedCard(QFrame):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFrameShape(QFrame.NoFrame)
+        
+        # Add shadow effect
+        self.shadow = QGraphicsDropShadowEffect()
+        self.shadow.setBlurRadius(15)
+        self.shadow.setColor(QColor(0, 0, 0, 30))
+        self.shadow.setOffset(0, 4)
+        self.setGraphicsEffect(self.shadow)
+        
+        self.setStyleSheet("""
+            AnimatedCard {
+                background-color: #ffffff;
+                border-radius: 8px;
+                border: none;
+            }
+        """)
 
 
 class StudentsPage(QWidget):
@@ -13,128 +35,489 @@ class StudentsPage(QWidget):
         super().__init__()
         self.stacked_widget = stacked_widget
         self.group_name = group_name
+        
+        # Set background color
+        self.setStyleSheet("background-color: #f5f7fa;")
+        
+        # Main layout
         self.layout = QVBoxLayout()
+        self.layout.setContentsMargins(30, 30, 30, 30)
+        self.layout.setSpacing(20)
         self.setLayout(self.layout)
-
+        
+        # Store cards for animation
+        self.cards = []
+        
         self.show_students()
 
     def show_students(self):
         self.clear_layout()
-
+        self.cards = []
+        
+        # Header card
+        header_card = AnimatedCard()
+        header_layout = QVBoxLayout(header_card)
+        
+        title = QLabel("רשימת תלמידות")
+        title.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        title.setStyleSheet("color: #2c3e50;")
+        title.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(title)
+        
+        subtitle = QLabel(f"קבוצת {self.group_name}")
+        subtitle.setFont(QFont("Segoe UI", 16))
+        subtitle.setStyleSheet("color: #7f8c8d;")
+        subtitle.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(subtitle)
+        
+        self.layout.addWidget(header_card)
+        self.cards.append(header_card)
+        
+        # Students card
+        students_card = AnimatedCard()
+        students_layout = QVBoxLayout(students_card)
+        students_layout.setContentsMargins(15, 15, 15, 15)
+        
+        # Create scroll area for students
         scroll_area = QScrollArea()
         scroll_area.setWidgetResizable(True)
-
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        scroll_area.setStyleSheet("""
+            QScrollArea {
+                border: none;
+                background-color: transparent;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: #f0f0f0;
+                width: 10px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #c0c0c0;
+                min-height: 20px;
+                border-radius: 5px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                border: none;
+                background: none;
+            }
+        """)
+        
         container_widget = QWidget()
-        scroll_area.setWidget(container_widget)
-
-        container_layout = QVBoxLayout()
-        container_widget.setLayout(container_layout)
-
-        container_layout.addWidget(QLabel(f"📚 תלמידות בקבוצה: {self.group_name}"))
-
+        container_layout = QVBoxLayout(container_widget)
+        container_layout.setContentsMargins(5, 5, 5, 5)
+        container_layout.setSpacing(15)
+        
         try:
             with open("data/students.json", encoding="utf-8") as f:
                 students = json.load(f).get("students", [])
         except Exception as e:
-            container_layout.addWidget(QLabel("שגיאה בטעינת התלמידות"))
+            error_label = QLabel("שגיאה בטעינת התלמידות")
+            error_label.setStyleSheet("color: #e74c3c; font-size: 14px;")
+            error_label.setAlignment(Qt.AlignCenter)
+            container_layout.addWidget(error_label)
             print("Error:", e)
-            return
+            students = []
 
         self.current_students = [s for s in students if s.get("group") == self.group_name]
 
         if not self.current_students:
-            container_layout.addWidget(QLabel("אין תלמידות בקבוצה זו"))
+            empty_label = QLabel("אין תלמידות בקבוצה זו")
+            empty_label.setStyleSheet("color: #7f8c8d; font-size: 14px;")
+            empty_label.setAlignment(Qt.AlignCenter)
+            container_layout.addWidget(empty_label)
         else:
             for student in self.current_students:
                 card = self.create_student_card(student)
                 container_layout.addWidget(card)
+                
+                # Add to animation list
+                self.cards.append(card)
 
-        self.layout.addWidget(scroll_area)
-
-        add_student_btn: QPushButton = QPushButton("➕ הוסף תלמידה")
+        scroll_area.setWidget(container_widget)
+        students_layout.addWidget(scroll_area)
+        
+        self.layout.addWidget(students_card)
+        self.cards.append(students_card)
+        
+        # Actions card
+        actions_card = AnimatedCard()
+        actions_layout = QHBoxLayout(actions_card)
+        actions_layout.setContentsMargins(15, 15, 15, 15)
+        actions_layout.setSpacing(15)
+        
+        # Add student button
+        add_student_btn = QPushButton("➕ הוסף תלמידה")
+        add_student_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #27ae60;
+            }
+        """)
+        add_student_btn.setCursor(Qt.PointingHandCursor)
         add_student_btn.clicked.connect(self.go_to_add_student_page)
-        self.layout.addWidget(add_student_btn)
-
-        back_btn: QPushButton = QPushButton("⬅ חזרה לרשימת הקבוצות")
+        
+        # Back button
+        back_btn = QPushButton("⬅ חזרה לרשימת הקבוצות")
+        back_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
+        back_btn.setCursor(Qt.PointingHandCursor)
         back_btn.clicked.connect(self.go_back)
-        self.layout.addWidget(back_btn)
+        
+        actions_layout.addWidget(add_student_btn)
+        actions_layout.addWidget(back_btn)
+        
+        self.layout.addWidget(actions_card)
+        self.cards.append(actions_card)
+        
+        # Run entrance animation
+        QTimer.singleShot(100, self.run_entrance_animation)
+
+    def run_entrance_animation(self):
+        for i, card in enumerate(self.cards):
+            animation = QPropertyAnimation(card, b"pos")
+            animation.setDuration(500)
+            animation.setStartValue(card.pos() + QPoint(0, 50))
+            animation.setEndValue(card.pos())
+            animation.setEasingCurve(QEasingCurve.OutCubic)
+            
+            # Use QTimer to delay the start of animation
+            QTimer.singleShot(i * 100, animation.start)
 
     def create_student_card(self, student):
-        card = QFrame()
-        card.setStyleSheet("""
-            background-color: #ffffff;
-            border-radius: 12px;
-            margin: 10px;
-            padding: 15px;
-        """)
-        card.setFrameShape(QFrame.StyledPanel)
-
-        layout = QVBoxLayout()
-        card.setLayout(layout)
-
+        card = AnimatedCard()
+        layout = QVBoxLayout(card)
+        layout.setContentsMargins(15, 15, 15, 15)
+        layout.setSpacing(8)
+        
+        # Header with icon and name
+        header_layout = QHBoxLayout()
+        
+        # Student icon
         icon_label = QLabel()
-        pixmap = QPixmap("path_to_icon.png")
+        pixmap = QPixmap("icons/student.png")  # Ensure this path exists or use a default icon
         if not pixmap.isNull():
-            icon_label.setPixmap(pixmap.scaled(50, 50, Qt.KeepAspectRatio))
-            layout.addWidget(icon_label, alignment=Qt.AlignCenter)
-
-        layout.addWidget(QLabel(f"👤 שם: {student['name']}"))
-        layout.addWidget(QLabel(f"📞 טלפון: {student['phone']}"))
-        layout.addWidget(QLabel(f"👥 קבוצה: {student['group']}"))
-        layout.addWidget(QLabel(f"💰 סטטוס תשלום: {student['payment_status']}"))
-        layout.addWidget(QLabel(f"📅 תאריך הצטרפות: {student['join_date']}"))
-
+            icon_label.setPixmap(pixmap.scaled(40, 40, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+        else:
+            # Create a placeholder with student initials
+            icon_label.setText(student['name'][0] if student['name'] else "?")
+            icon_label.setStyleSheet("""
+                QLabel {
+                    background-color: #3498db;
+                    color: white;
+                    border-radius: 20px;
+                    font-size: 18px;
+                    font-weight: bold;
+                    min-width: 40px;
+                    min-height: 40px;
+                    max-width: 40px;
+                    max-height: 40px;
+                    qproperty-alignment: AlignCenter;
+                }
+            """)
+        
+        # Student name
+        name_label = QLabel(student['name'])
+        name_label.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        name_label.setStyleSheet("color: #2c3e50;")
+        
+        header_layout.addWidget(icon_label)
+        header_layout.addWidget(name_label)
+        header_layout.addStretch()
+        
+        layout.addLayout(header_layout)
+        
+        # Student details
+        details_layout = QFormLayout()
+        details_layout.setContentsMargins(10, 10, 10, 10)
+        details_layout.setSpacing(8)
+        details_layout.setLabelAlignment(Qt.AlignRight)
+        details_layout.setFormAlignment(Qt.AlignRight)
+        
+        # Style for labels
+        label_style = "font-weight: bold; color: #7f8c8d;"
+        value_style = "color: #2c3e50;"
+        
+        # Phone
+        phone_label = QLabel("📞 טלפון:")
+        phone_label.setStyleSheet(label_style)
+        phone_value = QLabel(student['phone'])
+        phone_value.setStyleSheet(value_style)
+        details_layout.addRow(phone_label, phone_value)
+        
+        # Group
+        group_label = QLabel("👥 קבוצה:")
+        group_label.setStyleSheet(label_style)
+        group_value = QLabel(student['group'])
+        group_value.setStyleSheet(value_style)
+        details_layout.addRow(group_label, group_value)
+        
+        # Payment status
+        payment_label = QLabel("💰 סטטוס תשלום:")
+        payment_label.setStyleSheet(label_style)
+        payment_value = QLabel(student['payment_status'])
+        
+        # Color-code payment status
+        if student['payment_status'] == "שולם":
+            payment_value.setStyleSheet("color: #2ecc71; font-weight: bold;")
+        elif student['payment_status'] == "חוב":
+            payment_value.setStyleSheet("color: #e74c3c; font-weight: bold;")
+        else:
+            payment_value.setStyleSheet("color: #f39c12; font-weight: bold;")
+            
+        details_layout.addRow(payment_label, payment_value)
+        
+        # Join date
+        date_label = QLabel("📅 תאריך הצטרפות:")
+        date_label.setStyleSheet(label_style)
+        date_value = QLabel(student['join_date'])
+        date_value.setStyleSheet(value_style)
+        details_layout.addRow(date_label, date_value)
+        
+        layout.addLayout(details_layout)
+        
+        # Buttons
         button_layout = QHBoxLayout()
-        edit_btn: QPushButton = QPushButton("עריכה")
-        delete_btn: QPushButton = QPushButton("מחיקה")
+        button_layout.setSpacing(10)
+        
+        edit_btn = QPushButton("עריכה")
+        edit_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+        """)
+        edit_btn.setCursor(Qt.PointingHandCursor)
+        
+        delete_btn = QPushButton("מחיקה")
+        delete_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 4px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
+        delete_btn.setCursor(Qt.PointingHandCursor)
+        
         button_layout.addWidget(edit_btn)
         button_layout.addWidget(delete_btn)
+        
         layout.addLayout(button_layout)
-
+        
         edit_btn.clicked.connect(lambda: self.edit_single_student(student))
-        delete_btn.clicked.connect(lambda: self.confirm_delete(student['name']))
-
+        delete_btn.clicked.connect(lambda: self.confirm_delete(student['id'], student['name']))
+        
         return card
 
-    def confirm_delete(self, student_name):
-        reply = QMessageBox.question(
-            self,
-            "אישור מחיקה",
-            f"האם למחוק את התלמידה '{student_name}'?",
-            QMessageBox.Yes | QMessageBox.No
-        )
+    def confirm_delete(self, student_id, student_name):
+        msg_box = QMessageBox()
+        msg_box.setWindowTitle("אישור מחיקה")
+        msg_box.setText(f"האם למחוק את התלמידה '{student_name}'?")
+        msg_box.setStandardButtons(QMessageBox.Yes | QMessageBox.No)
+        msg_box.setDefaultButton(QMessageBox.No)
+        msg_box.setStyleSheet("""
+            QMessageBox {
+                background-color: #f5f7fa;
+            }
+            QLabel {
+                color: #2c3e50;
+                font-size: 14px;
+            }
+            QPushButton {
+                background-color: #3498db;
+                color: white;
+                border: none;
+                padding: 8px 15px;
+                border-radius: 4px;
+                font-weight: bold;
+                min-width: 80px;
+            }
+            QPushButton:hover {
+                background-color: #2980b9;
+            }
+            QPushButton[text="לא"] {
+                background-color: #e74c3c;
+            }
+            QPushButton[text="לא"]:hover {
+                background-color: #c0392b;
+            }
+        """)
+        
+        reply = msg_box.exec_()
         if reply == QMessageBox.Yes:
-            self.delete_student(student_name)
+            self.delete_student(student_id, student_name)
 
     def edit_single_student(self, student):
         self.clear_layout()
-
-        form_layout = QFormLayout()
-
+        self.cards = []
+        
+        # Header card
+        header_card = AnimatedCard()
+        header_layout = QVBoxLayout(header_card)
+        
+        title = QLabel("עריכת תלמידה")
+        title.setFont(QFont("Segoe UI", 24, QFont.Bold))
+        title.setStyleSheet("color: #2c3e50;")
+        title.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(title)
+        
+        subtitle = QLabel(student['name'])
+        subtitle.setFont(QFont("Segoe UI", 16))
+        subtitle.setStyleSheet("color: #7f8c8d;")
+        subtitle.setAlignment(Qt.AlignCenter)
+        header_layout.addWidget(subtitle)
+        
+        self.layout.addWidget(header_card)
+        self.cards.append(header_card)
+        
+        # Form card
+        form_card = AnimatedCard()
+        form_layout = QVBoxLayout(form_card)
+        form_layout.setContentsMargins(20, 20, 20, 20)
+        
+        # Create form
+        edit_form = QFormLayout()
+        edit_form.setLabelAlignment(Qt.AlignRight)
+        edit_form.setFormAlignment(Qt.AlignRight)
+        edit_form.setSpacing(15)
+        
+        # Style for form inputs
+        input_style = """
+            QLineEdit {
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                padding: 8px;
+                background-color: #f9f9f9;
+                color: #2c3e50;
+                font-size: 14px;
+            }
+            QLineEdit:focus {
+                border: 1px solid #3498db;
+                background-color: white;
+            }
+        """
+        
+        # Create form fields
         name_edit = QLineEdit(student['name'])
+        name_edit.setStyleSheet(input_style)
+        name_edit.setMinimumHeight(35)
+        
         phone_edit = QLineEdit(student['phone'])
+        phone_edit.setStyleSheet(input_style)
+        phone_edit.setMinimumHeight(35)
+        
         group_edit = QLineEdit(student['group'])
+        group_edit.setStyleSheet(input_style)
+        group_edit.setMinimumHeight(35)
+        
         payment_edit = QLineEdit(student['payment_status'])
+        payment_edit.setStyleSheet(input_style)
+        payment_edit.setMinimumHeight(35)
+        
         join_edit = QLineEdit(student['join_date'])
-
-        form_layout.addRow("שם:", name_edit)
-        form_layout.addRow("טלפון:", phone_edit)
-        form_layout.addRow("קבוצה:", group_edit)
-        form_layout.addRow("סטטוס תשלום:", payment_edit)
-        form_layout.addRow("תאריך הצטרפות:", join_edit)
-
-        self.layout.addLayout(form_layout)
-
-        btn_layout = QHBoxLayout()
-        save_btn: QPushButton = QPushButton("שמור")
-        cancel_btn: QPushButton = QPushButton("ביטול")
-        btn_layout.addWidget(save_btn)
-        btn_layout.addWidget(cancel_btn)
-        self.layout.addLayout(btn_layout)
-
+        join_edit.setStyleSheet(input_style)
+        join_edit.setMinimumHeight(35)
+        
+        # Add fields to form
+        edit_form.addRow("שם:", name_edit)
+        edit_form.addRow("טלפון:", phone_edit)
+        edit_form.addRow("קבוצה:", group_edit)
+        edit_form.addRow("סטטוס תשלום:", payment_edit)
+        edit_form.addRow("תאריך הצטרפות:", join_edit)
+        
+        form_layout.addLayout(edit_form)
+        self.layout.addWidget(form_card)
+        self.cards.append(form_card)
+        
+        # Buttons card
+        buttons_card = AnimatedCard()
+        buttons_layout = QHBoxLayout(buttons_card)
+        buttons_layout.setContentsMargins(15, 15, 15, 15)
+        buttons_layout.setSpacing(15)
+        
+        # Save button
+        save_btn = QPushButton("שמור")
+        save_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2ecc71;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #27ae60;
+            }
+        """)
+        save_btn.setCursor(Qt.PointingHandCursor)
+        
+        # Cancel button
+        cancel_btn = QPushButton("ביטול")
+        cancel_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #e74c3c;
+                color: white;
+                border: none;
+                padding: 12px 20px;
+                border-radius: 6px;
+                font-size: 14px;
+                font-weight: bold;
+                min-width: 120px;
+            }
+            QPushButton:hover {
+                background-color: #c0392b;
+            }
+        """)
+        cancel_btn.setCursor(Qt.PointingHandCursor)
+        
+        buttons_layout.addWidget(save_btn)
+        buttons_layout.addWidget(cancel_btn)
+        
+        self.layout.addWidget(buttons_card)
+        self.cards.append(buttons_card)
+        
+        # Connect buttons
         save_btn.clicked.connect(lambda: self.save_student(
             original_name=student['name'],
             new_data={
+                "id": student.get('id', ''),
                 "name": name_edit.text().strip(),
                 "phone": phone_edit.text().strip(),
                 "group": group_edit.text().strip(),
@@ -143,10 +526,38 @@ class StudentsPage(QWidget):
             }
         ))
         cancel_btn.clicked.connect(self.show_students)
+        
+        # Run entrance animation
+        QTimer.singleShot(100, self.run_entrance_animation)
 
     def save_student(self, original_name, new_data):
         if not all(new_data.values()):
-            QMessageBox.warning(self, "שגיאה", "יש למלא את כל השדות.")
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("שגיאה")
+            msg_box.setText("יש למלא את כל השדות.")
+            msg_box.setIcon(QMessageBox.Warning)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #3498db;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #2980b9;
+                }
+            """)
+            msg_box.exec_()
             return
 
         try:
@@ -162,23 +573,133 @@ class StudentsPage(QWidget):
             with open("data/students.json", 'w', encoding="utf-8") as f:
                 json.dump({"students": students}, f, ensure_ascii=False, indent=4)
 
+            # Success message
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("הצלחה")
+            msg_box.setText("פרטי התלמידה נשמרו בהצלחה!")
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #2ecc71;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #27ae60;
+                }
+            """)
+            msg_box.exec_()
+            
             self.show_students()
         except Exception as e:
+            # Error message
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("שגיאה")
+            msg_box.setText(f"שגיאה בשמירה: {e}")
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #e74c3c;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #c0392b;
+                }
+            """)
+            msg_box.exec_()
             print(f"שגיאה בשמירה: {e}")
 
-    def delete_student(self, student_name):
+    def delete_student(self, student_id, student_name):
         try:
             with open("data/students.json", encoding="utf-8") as f:
                 data = json.load(f)
                 students = data.get("students", [])
 
-            updated_students = [s for s in students if s['name'] != student_name]
+            updated_students = [s for s in students if s['id'] != student_id]
 
             with open("data/students.json", 'w', encoding="utf-8") as f:
                 json.dump({"students": updated_students}, f, ensure_ascii=False, indent=4)
 
+            # Success message
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("הצלחה")
+            msg_box.setText(f"התלמידה {student_name} נמחקה בהצלחה!")
+            msg_box.setIcon(QMessageBox.Information)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #2ecc71;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #27ae60;
+                }
+            """)
+            msg_box.exec_()
+            
             self.show_students()
         except Exception as e:
+            # Error message
+            msg_box = QMessageBox()
+            msg_box.setWindowTitle("שגיאה")
+            msg_box.setText(f"שגיאה במחיקה: {e}")
+            msg_box.setIcon(QMessageBox.Critical)
+            msg_box.setStyleSheet("""
+                QMessageBox {
+                    background-color: #f5f7fa;
+                }
+                QLabel {
+                    color: #2c3e50;
+                    font-size: 14px;
+                }
+                QPushButton {
+                    background-color: #e74c3c;
+                    color: white;
+                    border: none;
+                    padding: 8px 15px;
+                    border-radius: 4px;
+                    font-weight: bold;
+                    min-width: 80px;
+                }
+                QPushButton:hover {
+                    background-color: #c0392b;
+                }
+            """)
+            msg_box.exec_()
             print(f"שגיאה במחיקה: {e}")
 
     def go_back(self):
