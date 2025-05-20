@@ -655,7 +655,7 @@ class StudentsPage(QWidget):
                 }
             """)
             msg_box.exec_()
-            print(f"שגיאה בשמירה: {e}")
+            print(f"Error saving: {e}")
 
     def delete_student(self, student_name):
         try:
@@ -725,7 +725,7 @@ class StudentsPage(QWidget):
                 }
             """)
             msg_box.exec_()
-            print(f"שגיאה במחיקה: {e}")
+            print(f"Error deleting: {e}")
 
     # פונקציות חדשות לניהול תשלומים
     def show_payments(self, student):
@@ -1124,7 +1124,7 @@ class StudentsPage(QWidget):
                 }
             """)
             msg_box.exec_()
-            print(f"שגיאה בשמירת תשלום: {e}")
+            print(f"Error saving payment: {e}")
 
     def go_back(self):
         self.stacked_widget.setCurrentIndex(1)

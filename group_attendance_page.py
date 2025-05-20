@@ -251,40 +251,31 @@ class GroupAttendancePage(QWidget):
         self.stacked_widget.setCurrentWidget(page)
 
     def get_full_group_by_id(self, group_id):
-        print("טוען קבוצה לפי group_id:", group_id)
 
         group = None
         if os.path.exists("data/groups.json"):
-            print("קובץ groups.json קיים.")
             with open("data/groups.json", "r", encoding="utf-8") as f:
                 groups_data = json.load(f)
                 for g in groups_data.get("groups", []):
-                    print("בודק קבוצה:", g["name"], "| id:", g["id"])
                     if str(g["id"]) == str(group_id):
                         group = g
-                        print("נמצאה קבוצה מתאימה:", group)
                         break
         else:
-            print("קובץ groups.json לא קיים!")
+            print("The groups.json file does not exist")
 
         if not group:
-            print("לא נמצאה קבוצה עם id:", group_id)
             return None
 
         students = []
         if os.path.exists("data/students.json"):
-            print("קובץ students.json קיים.")
             with open("data/students.json", "r", encoding="utf-8") as f:
                 students_data = json.load(f)
                 for s in students_data.get("students", []):
-                    print("בודק תלמידה:", s["name"], "| שייכת לקבוצה:", s.get("group"))
                     if s.get("group", "").strip() == group["name"].strip():
-                        print("נוספה תלמידה:", s["name"])
                         students.append({"id": s["id"], "name": s["name"]})
         else:
-            print("קובץ students.json לא קיים!")
+            print("The file students.json does not exist")
 
-        print("מספר תלמידות שנמצאו:", len(students))
         group["students"] = students
         return group
 

@@ -535,7 +535,7 @@ class MainWindow(QMainWindow):
         progress_info.addStretch()
         
         progress_circle = CircularProgress()
-        QTimer.singleShot(500, lambda: progress_circle.animate_progress(0, 75))
+        QTimer.singleShot(800, lambda: progress_circle.animate_progress(0, 75))
         
         progress_layout.addLayout(progress_info)
         progress_layout.addWidget(progress_circle)
@@ -761,9 +761,34 @@ class MainWindow(QMainWindow):
                         label.setStyleSheet(label.styleSheet().replace("color: #bdc3c7", "color: #7f8c8d"))
 
 
+def resizeEvent(self, event):
+    new_width = self.width()
+    new_height = self.height()
+    
+    base_font_size = max(10, min(24, new_width / 50))
+    
+    self.setStyleSheet(f"""
+        QLabel[title=true] {{ font-size: {base_font_size}px; font-weight: bold; }}
+        QLabel[subtitle=true] {{ font-size: {base_font_size * 0.8}px; }}
+    """)
+    
+    for widget in self.findChildren(QWidget):
+        if isinstance(widget, AnimatedCard):
+            margin = max(10, min(30, new_width / 60))
+            widget.setContentsMargins(margin, margin, margin, margin)
+    
+    super().resizeEvent(event)
+
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    
+    app.setStyleSheet("""
+    QPushButton {
+        max-width: 300px;
+        min-width: 120px;
+    }
+    """)
+
     app.setStyle('Fusion')
     
     app.setLayoutDirection(Qt.RightToLeft)

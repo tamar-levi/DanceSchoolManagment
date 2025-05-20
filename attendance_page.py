@@ -34,7 +34,7 @@ def load_groups():
             data = json.load(file)
             return data.get("groups", [])
     except Exception as e:
-        print("שגיאה בטעינת קבוצות:", e)
+        print("Error on Load groups", e)
         return []
 
 class AttendancePage(QWidget):
