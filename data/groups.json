@@ -2,27 +2,11 @@
   "groups": [
     {
       "id": 1,
-      "name": "מחול מודרני",
-      "location": "ירושלים",
-      "price": "1800",
-      "age_group": "18",
-      "teacher": "חיה רוט",
-      "students": [
-        { "id": 1, "name": "שרה כהן" },
-        { "id": 2, "name": "דבורה לוי" }
-      ]
-    },
-    {
-      "id": 2,
       "name": "היפ הופ",
-      "location": "רמות",
-      "price": "2000",
-      "age_group": "18",
-      "teacher": "מיכל לוין",
-      "students": [
-        { "id": 3, "name": "רות כהן" },
-        { "id": 4, "name": "יעל מזרחי" }
-      ]
+      "location": "ירושלים",
+      "price": "1500",
+      "age_group": "א-ה",
+      "teacher": "יעל בקר"
     }
   ]
 }

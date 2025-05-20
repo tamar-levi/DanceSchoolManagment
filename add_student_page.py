@@ -7,18 +7,19 @@ from PyQt5.QtWidgets import (
 from PyQt5.QtCore import Qt, QDate, QPropertyAnimation, QEasingCurve, QPoint, QTimer
 from PyQt5.QtGui import QColor, QFont
 
+
 class AnimatedCard(QFrame):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setFrameShape(QFrame.NoFrame)
-        
+
         # Add shadow effect
         self.shadow = QGraphicsDropShadowEffect()
         self.shadow.setBlurRadius(15)
         self.shadow.setColor(QColor(0, 0, 0, 30))
         self.shadow.setOffset(0, 4)
         self.setGraphicsEffect(self.shadow)
-        
+
         self.setStyleSheet("""
             AnimatedCard {
                 background-color: #ffffff;
@@ -27,44 +28,45 @@ class AnimatedCard(QFrame):
             }
         """)
 
+
 class AddStudentPage(QWidget):
     def __init__(self, stacked_widget, group_name):
         super().__init__()
 
         self.stacked_widget = stacked_widget
         self.group_name = group_name
-        
+
         # Set background color
         self.setStyleSheet("background-color: #f5f7fa;")
-        
+
         # Main layout
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(30, 30, 30, 30)
         main_layout.setSpacing(20)
         self.setLayout(main_layout)
-        
+
         # Title card
         title_card = AnimatedCard()
         title_layout = QVBoxLayout(title_card)
-        
+
         title_label = QLabel("הוספת תלמידה חדשה")
         title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
         title_label.setAlignment(Qt.AlignCenter)
-        
+
         subtitle_label = QLabel(f"לקבוצת {group_name}")
         subtitle_label.setStyleSheet("font-size: 16px; color: #7f8c8d;")
         subtitle_label.setAlignment(Qt.AlignCenter)
-        
+
         title_layout.addWidget(title_label)
         title_layout.addWidget(subtitle_label)
-        
+
         main_layout.addWidget(title_card)
-        
+
         # Form card
         form_card = AnimatedCard()
         form_layout = QVBoxLayout(form_card)
         form_layout.setSpacing(15)
-        
+
         # Input fields style
         input_style = """
             QLineEdit, QComboBox, QDateEdit {
@@ -80,7 +82,7 @@ class AddStudentPage(QWidget):
                 background-color: #ffffff;
             }
         """
-        
+
         # Name input
         name_label = QLabel("שם התלמידה:")
         name_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2c3e50;")
@@ -90,7 +92,7 @@ class AddStudentPage(QWidget):
         self.name_input.setAlignment(Qt.AlignRight)
         form_layout.addWidget(name_label)
         form_layout.addWidget(self.name_input)
-        
+
         # Phone input
         phone_label = QLabel("מספר טלפון:")
         phone_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2c3e50;")
@@ -100,7 +102,7 @@ class AddStudentPage(QWidget):
         self.phone_input.setAlignment(Qt.AlignRight)
         form_layout.addWidget(phone_label)
         form_layout.addWidget(self.phone_input)
-        
+
         # ID input
         id_label = QLabel("תעודת זהות:")
         id_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2c3e50;")
@@ -110,7 +112,7 @@ class AddStudentPage(QWidget):
         self.id_input.setAlignment(Qt.AlignRight)
         form_layout.addWidget(id_label)
         form_layout.addWidget(self.id_input)
-        
+
         # Group input
         group_label = QLabel("קבוצה:")
         group_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2c3e50;")
@@ -119,7 +121,7 @@ class AddStudentPage(QWidget):
         self.load_groups()
         form_layout.addWidget(group_label)
         form_layout.addWidget(self.group_input)
-        
+
         # Payment status
         payment_label = QLabel("סטטוס תשלום:")
         payment_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2c3e50;")
@@ -128,7 +130,7 @@ class AddStudentPage(QWidget):
         self.payment_status_input.setStyleSheet(input_style)
         form_layout.addWidget(payment_label)
         form_layout.addWidget(self.payment_status_input)
-        
+
         # Join date
         date_label = QLabel("תאריך הצטרפות:")
         date_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #2c3e50;")
@@ -139,14 +141,14 @@ class AddStudentPage(QWidget):
         self.join_date_input.setCalendarPopup(True)
         form_layout.addWidget(date_label)
         form_layout.addWidget(self.join_date_input)
-        
+
         main_layout.addWidget(form_card)
-        
+
         # Buttons card
         buttons_card = AnimatedCard()
         buttons_layout = QHBoxLayout(buttons_card)
         buttons_layout.setSpacing(15)
-        
+
         # Add button
         add_button = QPushButton("הוסף תלמידה")
         add_button.setStyleSheet("""
@@ -164,7 +166,7 @@ class AddStudentPage(QWidget):
         """)
         add_button.setCursor(Qt.PointingHandCursor)
         add_button.clicked.connect(self.add_student)
-        
+
         # Back button
         back_btn = QPushButton("⬅ חזרה לעמוד הקבוצות")
         back_btn.setStyleSheet("""
@@ -182,24 +184,24 @@ class AddStudentPage(QWidget):
         """)
         back_btn.setCursor(Qt.PointingHandCursor)
         back_btn.clicked.connect(self.go_back)
-        
+
         buttons_layout.addWidget(add_button)
         buttons_layout.addWidget(back_btn)
-        
+
         main_layout.addWidget(buttons_card)
-        
+
         # Run entrance animation
         self.run_entrance_animation(title_card, form_card, buttons_card)
 
     def run_entrance_animation(self, *widgets):
         for i, widget in enumerate(widgets):
-        # Create animation for position
+            # Create animation for position
             animation = QPropertyAnimation(widget, b"pos")
             animation.setDuration(500)
             animation.setStartValue(widget.pos() + QPoint(0, 50))
             animation.setEndValue(widget.pos())
             animation.setEasingCurve(QEasingCurve.OutCubic)
-            
+
             # Use QTimer to delay the start of animation
             QTimer.singleShot(i * 100, animation.start)
 
@@ -210,7 +212,7 @@ class AddStudentPage(QWidget):
                 groups = data.get("groups", [])
                 for group in groups:
                     self.group_input.addItem(group["name"])
-                
+
                 # Set current group
                 index = self.group_input.findText(self.group_name)
                 if index >= 0:
