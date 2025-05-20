@@ -14,7 +14,7 @@ class AddStudentPage(QWidget):
         super().__init__()
 
         self.stacked_widget = stacked_widget
-        self.group_name = group_name  # מתקבל בפרמטר
+        self.group_name = group_name 
 
         self.stacked_widget = stacked_widget
         self.group_name = group_name
@@ -32,17 +32,14 @@ class AddStudentPage(QWidget):
         self.phone_input.setPlaceholderText("הכנס מספר פלאפון")
         layout.addWidget(self.phone_input)
 
-        # תעודת זהות
         self.id_input = QLineEdit()
         self.id_input.setPlaceholderText("הכנס מספר תעודת זהות")
         layout.addWidget(self.id_input)
 
-        # קבוצה
         self.group_input = QComboBox()
         self.load_groups()
         layout.addWidget(self.group_input)
 
-        # סטטוס תשלום
         self.payment_status_input = QComboBox()
         self.payment_status_input.addItems(["חוב", "יתרת זכות", "שולם"])
         layout.addWidget(QLabel("סטטוס תשלום"))

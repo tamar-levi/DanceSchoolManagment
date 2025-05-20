@@ -7,19 +7,17 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtCore import (
     Qt, QPropertyAnimation, QPoint, QSize, QEasingCurve, QRect, 
-    QParallelAnimationGroup,  QTimer, QEvent, pyqtProperty as Property
+    QParallelAnimationGroup, QTimer, QEvent, pyqtProperty as Property
 )
 
 from PyQt5.QtGui import (
-    QIcon, QFont, QColor, QPixmap, QPainter, QPen, QBrush,QFontDatabase
+    QIcon, QFont, QColor, QPixmap, QPainter, QPen, QBrush, QFontDatabase
 )
 
 from groups_page import GroupsPage
 from attendance_page import AttendancePage
 from payment_page import PaymentPage
 
-
-# Load custom fonts
 def load_fonts():
     font_dir = "fonts"
     if os.path.exists(font_dir):
@@ -27,7 +25,7 @@ def load_fonts():
             if font_file.endswith(('.ttf', '.otf')):
                 QFontDatabase.addApplicationFont(os.path.join(font_dir, font_file))
 
-# Animated toggle button (like in Docker Desktop)
+
 class AnimatedToggle(QToolButton):
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -62,7 +60,6 @@ class AnimatedToggle(QToolButton):
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing)
         
-        # Draw background
         track_opacity = 0.8
         track_brush = QBrush(self._bg_color_checked if self.isChecked() else self._bg_color)
         p.setOpacity(track_opacity)
@@ -73,14 +70,13 @@ class AnimatedToggle(QToolButton):
         p.drawRoundedRect(0, (self.height() - track_height) // 2, 
         self.width(), track_height, 8, 8)
         
-        # Draw circle/handle
         p.setOpacity(1.0)
         p.setBrush(QBrush(self._circle_color))
         circle_radius = 11
         circle_x = self._circle_position * (self.width() - 2 * circle_radius) + circle_radius
         p.drawEllipse(QPoint(int(circle_x), self.height() // 2), circle_radius, circle_radius)
 
-# Animated sidebar button with hover effects
+
 class AnimatedSidebarButton(QToolButton):
     def __init__(self, text, icon_name=None, parent=None):
         super().__init__(parent)
@@ -92,7 +88,6 @@ class AnimatedSidebarButton(QToolButton):
         self.setMinimumHeight(50)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         
-        # Set icon if provided
         if icon_name:
             icon_path = f"icons/{icon_name}.png"
             if os.path.exists(icon_path):
@@ -102,16 +97,13 @@ class AnimatedSidebarButton(QToolButton):
             
             self.setIconSize(QSize(22, 22))
         
-        # Hover animation properties
         self._hover_progress = 0.0
         self._animation = QPropertyAnimation(self, b"hover_progress")
         self._animation.setDuration(200)
         self._animation.setEasingCurve(QEasingCurve.InOutQuad)
         
-        # Install event filter for hover events
         self.installEventFilter(self)
         
-        # Apply style
         self.setStyleSheet("""
             AnimatedSidebarButton {
                 background-color: transparent;
@@ -156,7 +148,6 @@ class AnimatedSidebarButton(QToolButton):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        # Draw background based on hover state and checked state
         if self.isChecked():
             bg_color = QColor(255, 255, 255, 40)
             painter.setBrush(QBrush(bg_color))
@@ -168,7 +159,6 @@ class AnimatedSidebarButton(QToolButton):
             painter.setPen(Qt.NoPen)
             painter.drawRoundedRect(self.rect(), 4, 4)
         
-        # Draw left indicator for selected item
         if self.isChecked():
             indicator_color = QColor("#0078d7")
             painter.setBrush(QBrush(indicator_color))
@@ -176,8 +166,7 @@ class AnimatedSidebarButton(QToolButton):
             indicator_rect = QRect(0, 10, 4, self.height() - 20)
             painter.drawRoundedRect(indicator_rect, 2, 2)
         
-        # Let the QToolButton draw the icon and text
-        # painter.end()
+        painter.end()
         super().paintEvent(event)
 
 # Card widget with hover effects and animations
@@ -186,28 +175,19 @@ class AnimatedCard(QFrame):
         super().__init__(parent)
         self.setFrameShape(QFrame.NoFrame)
         self.setCursor(Qt.PointingHandCursor)
-        
-        # Shadow effect
+
         self.shadow = QGraphicsDropShadowEffect()
         self.shadow.setBlurRadius(15)
         self.shadow.setColor(QColor(0, 0, 0, 30))
         self.shadow.setOffset(0, 4)
         self.setGraphicsEffect(self.shadow)
         
-        # Hover animation properties
         self._hover = False
         self._animation = QPropertyAnimation(self.shadow, b"blurRadius")
         self._animation.setDuration(200)
         
-        # הוספת אנימציית התזוזה כאן במקום ליצור אותה בכל פעם מחדש
-        self.move_animation = QPropertyAnimation(self, b"pos")
-        self.move_animation.setDuration(200)
-        self.move_animation.setEasingCurve(QEasingCurve.OutCubic)
-        
-        # Install event filter for hover events
         self.installEventFilter(self)
         
-        # Style
         self.setStyleSheet("""
             AnimatedCard {
                 background-color: #ffffff;
@@ -215,7 +195,6 @@ class AnimatedCard(QFrame):
                 border: none;
             }
         """)
-
 
     def eventFilter(self, obj, event):
         if obj == self:
@@ -234,33 +213,35 @@ class AnimatedCard(QFrame):
             self._animation.setEndValue(25)
             self.shadow.setColor(QColor(0, 0, 0, 60))
             
-            # Create translation animation for slight "lift" effect
-            self.move_animation.stop()
+            self.move_animation = QPropertyAnimation(self, b"pos")
+            self.move_animation.setDuration(200)
             self.move_animation.setStartValue(self.pos())
             self.move_animation.setEndValue(self.pos() - QPoint(0, 5))
+            self.move_animation.setEasingCurve(QEasingCurve.OutCubic)
             self.move_animation.start()
         else:
             self._animation.setStartValue(25)
             self._animation.setEndValue(15)
             self.shadow.setColor(QColor(0, 0, 0, 30))
             
-            # Create translation animation to return to original position
-            self.move_animation.stop()
+            self.move_animation = QPropertyAnimation(self, b"pos")
+            self.move_animation.setDuration(200)
             self.move_animation.setStartValue(self.pos())
             self.move_animation.setEndValue(self.pos() + QPoint(0, 5))
+            self.move_animation.setEasingCurve(QEasingCurve.OutCubic)
             self.move_animation.start()
-
+        
         self._animation.start()
+
 
 # Circular progress indicator
 class CircularProgress(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumSize(120, 120)
-        self._progress = 75  # Default value
+        self._progress = 75 
         self._color = QColor("#0078d7")
         
-        # Animation
         self._animation = QPropertyAnimation(self, b"progress")
         self._animation.setDuration(1000)
         self._animation.setEasingCurve(QEasingCurve.OutCubic)
@@ -284,28 +265,23 @@ class CircularProgress(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        # Calculate sizes
         width = min(self.width(), self.height())
         outer_radius = width / 2
         inner_radius = outer_radius * 0.75
         center = self.rect().center()
         
-        # Draw background circle
         painter.setPen(Qt.NoPen)
         painter.setBrush(QColor("#e0e0e0"))
         painter.drawEllipse(center, outer_radius, outer_radius)
         
-        # Draw progress arc
         pen = QPen(self._color)
         pen.setWidth(int(outer_radius - inner_radius))
         pen.setCapStyle(Qt.RoundCap)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
         
-        # Calculate span angle for progress
         span_angle = -self._progress * 360 / 100
         
-        # Draw arc
         rect = QRect(
             int(center.x() - outer_radius),
             int(center.y() - outer_radius),
@@ -314,7 +290,6 @@ class CircularProgress(QWidget):
         )
         painter.drawArc(rect, 90 * 16, int(span_angle * 16))
         
-        # Draw text
         painter.setPen(QColor("#333333"))
         font = painter.font()
         font.setPointSize(14)
@@ -322,13 +297,17 @@ class CircularProgress(QWidget):
         painter.setFont(font)
         painter.drawText(self.rect(), Qt.AlignCenter, f"{self._progress}%")
 
+# Main window
 class MainWindow(QMainWindow):
     def __init__(self):
-        super().__init__()        
-        load_fonts()        
+        super().__init__()
+
+        load_fonts()
+        
         self.setWindowTitle('זה הריקוד שלך')
         self.resize(1200, 800)
         self.setMinimumSize(1000, 700)
+        
         app_font = QFont("Segoe UI", 10)
         QApplication.setFont(app_font)
         
@@ -346,52 +325,131 @@ class MainWindow(QMainWindow):
         self.content_area.setWidgetResizable(True)
         self.content_area.setFrameShape(QFrame.NoFrame)
         self.content_area.setStyleSheet("""
-        QScrollArea {
-            border: none;
-            background-color: #f5f7fa;
-        }
-        QScrollBar:vertical {
-            border: none;
-            background: #f0f0f0;
-            width: 10px;
-            margin: 0px;
-        }
-        QScrollBar::handle:vertical {
-            background: #c0c0c0;
-            min-height: 20px;
-            border-radius: 5px;
-        }
-        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-            border: none;
-            background: none;
-        }
+            QScrollArea {
+                border: none;
+                background-color: #f5f7fa;
+            }
+            QScrollBar:vertical {
+                border: none;
+                background: #f0f0f0;
+                width: 10px;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #c0c0c0;
+                min-height: 20px;
+                border-radius: 5px;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                border: none;
+                background: none;
+            }
         """)
 
-    # Create content widget
         content_widget = QWidget()
         content_layout = QVBoxLayout(content_widget)
         content_layout.setContentsMargins(30, 30, 30, 30)
         content_layout.setSpacing(20)
         self.content_area.setWidget(content_widget)
         
-        # Create stacked widget for different pages
         self.stack = QStackedWidget()
         content_layout.addWidget(self.stack)
         
-        # Create pages
         self.home_page = self.create_home_page()
         self.groups_page = GroupsPage(self.stack)
         self.attendance_page = AttendancePage(self.stack)
         self.payment_page = PaymentPage(self.stack)
+        
+        self.stack.addWidget(self.home_page)
+        self.stack.addWidget(self.groups_page)
+        self.stack.addWidget(self.attendance_page)
+        self.stack.addWidget(self.payment_page)
+        
+        main_layout.addWidget(self.content_area)
+        
+        self.stack.setCurrentIndex(0)
+        
+        QTimer.singleShot(100, self.run_entrance_animation)
+
+    def create_sidebar(self):
+        sidebar = QWidget()
+        sidebar.setFixedWidth(250)
+        sidebar.setStyleSheet("""
+            QWidget {
+                background-color: #2c3e50;
+                color: #ecf0f1;
+            }
+            QLabel {
+                color: #ecf0f1;
+            }
+        """)
+        
+        layout = QVBoxLayout(sidebar)
+        layout.setContentsMargins(10, 20, 10, 20)
+        layout.setSpacing(10)
+        
+        # Add logo
+        logo_container = QWidget()
+        logo_layout = QHBoxLayout(logo_container)
+        logo_layout.setContentsMargins(0, 0, 0, 20)
+        
+        logo_label = QLabel("זה הריקוד שלך")
+        logo_label.setStyleSheet("font-size: 20px; font-weight: bold; color: white;")
+        logo_layout.addWidget(logo_label)
+        
+        layout.addWidget(logo_container)
+        
+        separator = QFrame()
+        separator.setFrameShape(QFrame.HLine)
+        separator.setFrameShadow(QFrame.Sunken)
+        separator.setStyleSheet("background-color: #34495e;")
+        layout.addWidget(separator)
+        
+        home_btn = AnimatedSidebarButton("דף הבית", "home")
+        home_btn.setChecked(True)
+        home_btn.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        layout.addWidget(home_btn)
+        
+        groups_btn = AnimatedSidebarButton("קבוצות", "user-group")
+        groups_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
+        layout.addWidget(groups_btn)
+        
+        attendance_btn = AnimatedSidebarButton("נוכחות", "checkmark")
+        attendance_btn.clicked.connect(lambda: self.stack.setCurrentIndex(2))
+        layout.addWidget(attendance_btn)
+        
+        payment_btn = AnimatedSidebarButton("תשלומים", "credit-card")
+        payment_btn.clicked.connect(lambda: self.stack.setCurrentIndex(3))
+        layout.addWidget(payment_btn)
+        
+        layout.addStretch()
+        
+        settings_label = QLabel("הגדרות")
+        settings_label.setStyleSheet("color: #7f8c8d; font-size: 12px; margin-top: 10px;")
+        layout.addWidget(settings_label)
+        
+        dark_mode_container = QWidget()
+        dark_mode_layout = QHBoxLayout(dark_mode_container)
+        dark_mode_layout.setContentsMargins(0, 5, 0, 5)
+        
+        dark_mode_label = QLabel("מצב כהה")
+        dark_mode_toggle = AnimatedToggle()
+        dark_mode_toggle.toggled.connect(self.toggle_dark_mode)
+        
+        dark_mode_layout.addWidget(dark_mode_toggle)
+        dark_mode_layout.addWidget(dark_mode_label)
+        dark_mode_layout.addStretch()
+        
+        layout.addWidget(dark_mode_container)
+        
+        return sidebar
 
     def create_home_page(self):
-        
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(30)
         
-        # Add welcome section
         welcome_card = AnimatedCard()
         welcome_layout = QVBoxLayout(welcome_card)
         
@@ -416,13 +474,11 @@ class MainWindow(QMainWindow):
             welcome_layout.addWidget(image_label)
         
         layout.addWidget(welcome_card)
-        
-        # Add stats section
+
         stats_container = QWidget()
         stats_layout = QHBoxLayout(stats_container)
         stats_layout.setSpacing(20)
         
-        # Students card
         students_card = AnimatedCard()
         students_layout = QVBoxLayout(students_card)
         
@@ -435,7 +491,6 @@ class MainWindow(QMainWindow):
         students_layout.addWidget(students_title)
         students_layout.addWidget(students_count)
         
-        # Groups card
         groups_card = AnimatedCard()
         groups_layout = QVBoxLayout(groups_card)
         
@@ -448,7 +503,6 @@ class MainWindow(QMainWindow):
         groups_layout.addWidget(groups_title)
         groups_layout.addWidget(groups_count)
         
-        # Payments card
         payments_card = AnimatedCard()
         payments_layout = QVBoxLayout(payments_card)
         
@@ -467,7 +521,6 @@ class MainWindow(QMainWindow):
         
         layout.addWidget(stats_container)
         
-        # Add attendance progress
         progress_card = AnimatedCard()
         progress_layout = QHBoxLayout(progress_card)
         
@@ -482,7 +535,6 @@ class MainWindow(QMainWindow):
         progress_info.addStretch()
         
         progress_circle = CircularProgress()
-        # Animate progress on page load
         QTimer.singleShot(500, lambda: progress_circle.animate_progress(0, 75))
         
         progress_layout.addLayout(progress_info)
@@ -490,7 +542,6 @@ class MainWindow(QMainWindow):
         
         layout.addWidget(progress_card)
         
-        # Add quick actions
         actions_card = AnimatedCard()
         actions_layout = QVBoxLayout(actions_card)
         
@@ -532,7 +583,7 @@ class MainWindow(QMainWindow):
             }
         """)
         add_group_btn.setCursor(Qt.PointingHandCursor)
-        add_group_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
+        add_student_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
 
         record_payment_btn = QPushButton("רישום תשלום")
         record_payment_btn.setStyleSheet("""
@@ -549,8 +600,7 @@ class MainWindow(QMainWindow):
             }
         """)
         record_payment_btn.setCursor(Qt.PointingHandCursor)
-        add_group_btn.clicked.connect(lambda: self.stack.setCurrentIndex(3))
-
+        
         buttons_layout.addWidget(add_student_btn)
         buttons_layout.addWidget(add_group_btn)
         buttons_layout.addWidget(record_payment_btn)
@@ -558,28 +608,23 @@ class MainWindow(QMainWindow):
         actions_layout.addLayout(buttons_layout)
         
         layout.addWidget(actions_card)
-        
-        # Add stretcher to push content to the top
         layout.addStretch()
         
         return page
+
     def run_entrance_animation(self):
-    # Animate sidebar entrance
         sidebar_animation = QPropertyAnimation(self.sidebar, b"pos")
         sidebar_animation.setDuration(500)
         sidebar_animation.setStartValue(QPoint(-self.sidebar.width(), 0))
         sidebar_animation.setEndValue(QPoint(0, 0))
         sidebar_animation.setEasingCurve(QEasingCurve.OutCubic)
 
-        # Run animations in parallel
         animation_group = QParallelAnimationGroup()
         animation_group.addAnimation(sidebar_animation)
         animation_group.start()
 
-
     def toggle_dark_mode(self, enabled):
         if enabled:
-            # Apply dark theme
             self.content_area.setStyleSheet("""
                 QWidget {
                     background-color: #1e1e1e;
@@ -609,7 +654,6 @@ class MainWindow(QMainWindow):
                 }
             """)
             
-            # Update card styles
             for card in self.findChildren(AnimatedCard):
                 card.setStyleSheet("""
                     AnimatedCard {
@@ -619,7 +663,51 @@ class MainWindow(QMainWindow):
                     }
                 """)
                 
-            # Update labels in cards
+            for card in self.findChildren(AnimatedCard):
+                for label in card.findChildren(QLabel):
+                    if "font-weight: bold" in label.styleSheet():
+                        label.setStyleSheet(label.styleSheet().replace("color: #2c3e50", "color:   #ffffff")) 
+                                                                       
+    def toggle_dark_mode(self, enabled):
+        if enabled:
+            self.content_area.setStyleSheet("""
+                QWidget {
+                    background-color: #1e1e1e;
+                    color: #ffffff;
+                }
+                QLabel {
+                    color: #ffffff;
+                }
+                QScrollArea {
+                    border: none;
+                    background-color: transparent;
+                }
+                QScrollBar:vertical {
+                    border: none;
+                    background: #2d2d2d;
+                    width: 10px;
+                    margin: 0px;
+                }
+                QScrollBar::handle:vertical {
+                    background: #3d3d3d;
+                    min-height: 20px;
+                    border-radius: 5px;
+                }
+                QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                    border: none;
+                    background: none;
+                }
+            """)
+            
+            for card in self.findChildren(AnimatedCard):
+                card.setStyleSheet("""
+                    AnimatedCard {
+                        background-color: #2d2d2d;
+                        border-radius: 8px;
+                        border: none;
+                    }
+                """)
+                
             for card in self.findChildren(AnimatedCard):
                 for label in card.findChildren(QLabel):
                     if "font-weight: bold" in label.styleSheet():
@@ -627,7 +715,6 @@ class MainWindow(QMainWindow):
                     elif "color: #7f8c8d" in label.styleSheet():
                         label.setStyleSheet(label.styleSheet().replace("color: #7f8c8d", "color: #bdc3c7"))
         else:
-            # Apply light theme
             self.content_area.setStyleSheet("""
                 QWidget {
                     background-color: #f5f7fa;
@@ -657,7 +744,6 @@ class MainWindow(QMainWindow):
                 }
             """)
             
-            # Update card styles
             for card in self.findChildren(AnimatedCard):
                 card.setStyleSheet("""
                     AnimatedCard {
@@ -667,7 +753,6 @@ class MainWindow(QMainWindow):
                     }
                 """)
                 
-            # Update labels in cards
             for card in self.findChildren(AnimatedCard):
                 for label in card.findChildren(QLabel):
                     if "font-weight: bold" in label.styleSheet():
@@ -675,19 +760,15 @@ class MainWindow(QMainWindow):
                     elif "color: #bdc3c7" in label.styleSheet():
                         label.setStyleSheet(label.styleSheet().replace("color: #bdc3c7", "color: #7f8c8d"))
 
+
 if __name__ == '__main__':
-    # Create application
     app = QApplication(sys.argv)
     
-    # Set application style
     app.setStyle('Fusion')
     
-    # Set RTL layout direction for Hebrew
     app.setLayoutDirection(Qt.RightToLeft)
     
-    # Create and show main window
     window = MainWindow()
     window.show()
     
-    # Run application
     sys.exit(app.exec_())
