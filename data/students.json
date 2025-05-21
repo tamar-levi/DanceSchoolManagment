@@ -20,13 +20,18 @@
             "name": "רחלי חדד",
             "phone": "0583202634",
             "group": "היפ הופ",
-            "payment_status": "חוב: 100.0₪",
+            "payment_status": "שולם",
             "join_date": "2025/05/20",
             "payments": [
                 {
                     "amount": "1400",
                     "date": "20/05/2025",
                     "payment_method": "מזומן"
+                },
+                {
+                    "amount": "100",
+                    "date": "21/05/2025",
+                    "payment_method": "אשראי"
                 }
             ]
         }

@@ -17,6 +17,7 @@ from PyQt5.QtGui import (
 from groups_page import GroupsPage
 from attendance_page import AttendancePage
 from payment_page import PaymentPage
+from students_list import StudentsListPage
 
 def load_fonts():
     font_dir = "fonts"
@@ -87,15 +88,6 @@ class AnimatedSidebarButton(QToolButton):
         self.setCursor(Qt.PointingHandCursor)
         self.setMinimumHeight(50)
         self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
-        
-        if icon_name:
-            icon_path = f"icons/{icon_name}.png"
-            if os.path.exists(icon_path):
-                self.setIcon(QIcon(icon_path))
-            else:
-                self.setIcon(QIcon.fromTheme(icon_name))
-            
-            self.setIconSize(QSize(22, 22))
         
         self._hover_progress = 0.0
         self._animation = QPropertyAnimation(self, b"hover_progress")
@@ -359,14 +351,15 @@ class MainWindow(QMainWindow):
         self.groups_page = GroupsPage(self.stack)
         self.attendance_page = AttendancePage(self.stack)
         self.payment_page = PaymentPage(self.stack)
-        
+        self.students_list_page = StudentsListPage(self.stack)
         self.stack.addWidget(self.home_page)
         self.stack.addWidget(self.groups_page)
         self.stack.addWidget(self.attendance_page)
         self.stack.addWidget(self.payment_page)
-        
+        self.stack.addWidget(self.students_list_page)
         main_layout.addWidget(self.content_area)
-        
+
+
         self.stack.setCurrentIndex(0)
         
         QTimer.singleShot(100, self.run_entrance_animation)
@@ -421,6 +414,10 @@ class MainWindow(QMainWindow):
         payment_btn = AnimatedSidebarButton("תשלומים", "credit-card")
         payment_btn.clicked.connect(lambda: self.stack.setCurrentIndex(3))
         layout.addWidget(payment_btn)
+
+        students_list_btn = AnimatedSidebarButton("רשימת התלמידות", "students-list")
+        students_list_btn.clicked.connect(lambda: self.stack.setCurrentIndex(4))
+        layout.addWidget(students_list_btn)
         
         layout.addStretch()
         

@@ -1,5 +1,6 @@
 import json
-from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton
+from PyQt5.QtWidgets import QWidget, QLabel, QVBoxLayout, QPushButton, QHBoxLayout, QGridLayout, QScrollArea
+from PyQt5.QtCore import Qt
 from students_page import StudentsPage
 from add_group_page import AddGroupPage
 
@@ -7,46 +8,42 @@ class GroupsPage(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
-        self.layout = QVBoxLayout()
-        self.setLayout(self.layout)
-        self.add_group_page = None
-        self.build_group_buttons()
-
-    def build_group_buttons(self):
-        self.clear_layout()
         
+        # שימוש בלייאאוט ראשי אנכי
+        main_layout = QVBoxLayout()
+        self.setLayout(main_layout)
+        
+        # כותרת ראשית
         title_label = QLabel("עמוד קבוצות")
-        title_label.setStyleSheet("font-size: 20px; font-weight: bold; color: #333; margin-bottom: 10px;")
-        self.layout.addWidget(title_label)
+        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #333; margin-bottom: 15px;")
+        title_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(title_label)
         
-        self.layout.addWidget(QLabel("בחרי קבוצה:"))
-
-        try:
-            with open("data/groups.json", encoding="utf-8") as f:
-                data = json.load(f)
-                groups = data.get("groups", [])
-        except Exception as e:
-            groups = []
-            self.layout.addWidget(QLabel("שגיאה בטעינת קבוצות"))
-            print("Error reading JSON file:", e)
-
-        for group in groups:
-            btn = QPushButton(group["name"])
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: grey; 
-                    padding: 10px; 
-                    font-size: 14px;
-                    border-radius: 4px;
-                    margin: 3px 0;
-                }
-                QPushButton:hover {
-                    background-color: grey;
-                }
-            """)
-            btn.clicked.connect(lambda _, name=group["name"]: self.show_students(name))
-            self.layout.addWidget(btn)
-
+        # תווית משנה
+        subtitle_label = QLabel("בחרי קבוצה:")
+        subtitle_label.setStyleSheet("font-size: 16px; color: #555; margin-bottom: 10px;")
+        subtitle_label.setAlignment(Qt.AlignCenter)
+        main_layout.addWidget(subtitle_label)
+        
+        # אזור גלילה לקבוצות
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setStyleSheet("border: none;")
+        
+        # מיכל לכפתורי הקבוצות
+        groups_container = QWidget()
+        self.groups_layout = QGridLayout(groups_container)
+        self.groups_layout.setAlignment(Qt.AlignCenter)
+        self.groups_layout.setSpacing(10)
+        
+        scroll_area.setWidget(groups_container)
+        main_layout.addWidget(scroll_area, 1)  # הוספת מקדם מתיחה
+        
+        # אזור כפתורי פעולה בתחתית המסך
+        buttons_layout = QHBoxLayout()
+        buttons_layout.setSpacing(15)
+        
+        # כפתור הוספת קבוצה
         add_group_button = QPushButton("➕ הוסף קבוצה")
         add_group_button.setStyleSheet("""
              QPushButton {
@@ -56,14 +53,15 @@ class GroupsPage(QWidget):
                 padding: 10px 20px;
                 border-radius: 5px;
                 font-weight: bold;
+                min-width: 150px;
             }
             QPushButton:hover {
                 background-color: #c0392b;
             }
         """)
         add_group_button.clicked.connect(self.add_group_page_func)
-        self.layout.addWidget(add_group_button)
-
+        
+        # כפתור חזרה
         back_btn = QPushButton("⬅ חזרה לעמוד הראשי")
         back_btn.setStyleSheet("""
              QPushButton {
@@ -73,13 +71,72 @@ class GroupsPage(QWidget):
                 padding: 10px 20px;
                 border-radius: 5px;
                 font-weight: bold;
+                min-width: 150px;
             }
             QPushButton:hover {
                 background-color: #27ae60;
             }
         """)
         back_btn.clicked.connect(self.go_home)
-        self.layout.addWidget(back_btn)
+        
+        # הוספת הכפתורים ללייאאוט התחתון
+        buttons_layout.addWidget(add_group_button)
+        buttons_layout.addWidget(back_btn)
+        
+        # הוספת לייאאוט הכפתורים ללייאאוט הראשי
+        main_layout.addLayout(buttons_layout)
+        
+        self.add_group_page = None
+        self.build_group_buttons()
+
+    def build_group_buttons(self):
+        # ניקוי הלייאאוט הקיים של הקבוצות
+        while self.groups_layout.count():
+            item = self.groups_layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+
+        try:
+            with open("data/groups.json", encoding="utf-8") as f:
+                data = json.load(f)
+                groups = data.get("groups", [])
+        except Exception as e:
+            groups = []
+            error_label = QLabel("שגיאה בטעינת קבוצות")
+            error_label.setStyleSheet("color: red; font-weight: bold;")
+            self.groups_layout.addWidget(error_label, 0, 0)
+            print("Error reading JSON file:", e)
+            return
+
+        # סידור הקבוצות ברשת (גריד)
+        row, col = 0, 0
+        max_cols = 3  # מספר העמודות ברשת
+        
+        for group in groups:
+            btn = QPushButton(group["name"])
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #3498db; 
+                    color: white;
+                    padding: 15px; 
+                    font-size: 16px;
+                    border-radius: 8px;
+                    min-width: 150px;
+                    min-height: 60px;
+                }
+                QPushButton:hover {
+                    background-color: #2980b9;
+                }
+            """)
+            btn.clicked.connect(lambda _, name=group["name"]: self.show_students(name))
+            
+            self.groups_layout.addWidget(btn, row, col)
+            
+            col += 1
+            if col >= max_cols:
+                col = 0
+                row += 1
 
     def show_students(self, group_name):
         students_page = StudentsPage(self.stacked_widget, group_name)
@@ -99,8 +156,4 @@ class GroupsPage(QWidget):
         self.build_group_buttons()
 
     def clear_layout(self):
-        while self.layout.count():
-            item = self.layout.takeAt(0)
-            widget = item.widget()
-            if widget is not None:
-                widget.deleteLater()
+        pass
