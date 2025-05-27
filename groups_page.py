@@ -13,14 +13,8 @@ class GroupsPage(QWidget):
         main_layout = QVBoxLayout()
         self.setLayout(main_layout)
         
-        # כותרת ראשית
-        title_label = QLabel("עמוד קבוצות")
-        title_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #333; margin-bottom: 15px;")
-        title_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(title_label)
-        
-        # תווית משנה
-        subtitle_label = QLabel("בחרי קבוצה:")
+        # # תווית משנה
+        subtitle_label = QLabel("כל הקבוצות:")
         subtitle_label.setStyleSheet("font-size: 16px; color: #555; margin-bottom: 10px;")
         subtitle_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(subtitle_label)
@@ -61,27 +55,9 @@ class GroupsPage(QWidget):
         """)
         add_group_button.clicked.connect(self.add_group_page_func)
         
-        # כפתור חזרה
-        back_btn = QPushButton("⬅ חזרה לעמוד הראשי")
-        back_btn.setStyleSheet("""
-             QPushButton {
-                background-color: #2ecc71;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                font-weight: bold;
-                min-width: 150px;
-            }
-            QPushButton:hover {
-                background-color: #27ae60;
-            }
-        """)
-        back_btn.clicked.connect(self.go_home)
-        
         # הוספת הכפתורים ללייאאוט התחתון
         buttons_layout.addWidget(add_group_button)
-        buttons_layout.addWidget(back_btn)
+        # buttons_layout.addWidget(back_btn)
         
         # הוספת לייאאוט הכפתורים ללייאאוט הראשי
         main_layout.addLayout(buttons_layout)

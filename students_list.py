@@ -48,9 +48,9 @@ class StudentsListPage(QWidget):
 
         # Table setup
         self.table = QTableWidget()
-        self.table.setColumnCount(6)
+        self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels([
-            "🆔 ת.ז", "📱 טלפון", "👥 קבוצה", "💰 סטטוס תשלום", "📅 תאריך הצטרפות", "📄 תשלומים"
+            "🆔 ת.ז", "📱 טלפון", "👥 קבוצה", "💰 סטטוס תשלום", "📅 תאריך הצטרפות"
         ])
         self.table.setLayoutDirection(Qt.RightToLeft)
         
@@ -142,15 +142,6 @@ class StudentsListPage(QWidget):
                 item = QTableWidgetItem(value)
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 self.table.setItem(row, col, item)
-
-            payments = student.get("payments", [])
-            payments_str = "\n".join(
-                f"{p['amount']}₪ ב־{p['date']} ({p['payment_method']})"
-                for p in payments
-            )
-            payments_item = QTableWidgetItem(payments_str)
-            payments_item.setFlags(payments_item.flags() & ~Qt.ItemIsEditable)
-            self.table.setItem(row, 5, payments_item)
         
         # Only adjust row heights for content
         self.table.resizeRowsToContents()

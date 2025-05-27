@@ -329,5 +329,8 @@ class AddGroupPage(QWidget):
             msg_box.exec_()
 
     def go_back(self):
-        self.groups_page.build_group_buttons()
-        self.stacked_widget.setCurrentWidget(self.groups_page)
+        groups_widget = self.stacked_widget.widget(1)
+        if hasattr(groups_widget, 'build_group_buttons'):
+            groups_widget.build_group_buttons()
+        
+        self.stacked_widget.setCurrentIndex(1)

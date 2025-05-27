@@ -1,5 +1,6 @@
 import sys
 import os
+
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QPushButton, QLabel, QVBoxLayout, QHBoxLayout,
     QStackedWidget, QFrame, QSizePolicy, QGraphicsDropShadowEffect, QMainWindow,
@@ -14,10 +15,13 @@ from PyQt5.QtGui import (
     QIcon, QFont, QColor, QPixmap, QPainter, QPen, QBrush, QFontDatabase
 )
 
+
 from groups_page import GroupsPage
 from attendance_page import AttendancePage
 from payment_page import PaymentPage
 from students_list import StudentsListPage
+from data_utils import get_all_dashboard_data, format_currency  # ייבוא הפונקציות החדשות
+
 
 def load_fonts():
     font_dir = "fonts"
@@ -230,7 +234,9 @@ class AnimatedCard(QFrame):
 class CircularProgress(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(120, 120)
+        self.setMinimumSize(250, 250)  # הקטנת הגודל
+        self.setMaximumSize(280, 280)  # הגבלת הגודל המקסימלי
+        self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self._progress = 75 
         self._color = QColor("#0078d7")
         
@@ -257,7 +263,7 @@ class CircularProgress(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
         
-        width = min(self.width(), self.height())
+        width = min(self.width() - 30, self.height() - 30)
         outer_radius = width / 2
         inner_radius = outer_radius * 0.75
         center = self.rect().center()
@@ -284,7 +290,8 @@ class CircularProgress(QWidget):
         
         painter.setPen(QColor("#333333"))
         font = painter.font()
-        font.setPointSize(14)
+        font_size = max(12, int(outer_radius / 6))  # התאמת גודל הפונט
+        font.setPointSize(font_size)
         font.setBold(True)
         painter.setFont(font)
         painter.drawText(self.rect(), Qt.AlignCenter, f"{self._progress}%")
@@ -358,11 +365,16 @@ class MainWindow(QMainWindow):
         self.stack.addWidget(self.payment_page)
         self.stack.addWidget(self.students_list_page)
         main_layout.addWidget(self.content_area)
-
+        self.stack.currentChanged.connect(self.on_page_changed)
 
         self.stack.setCurrentIndex(0)
         
         QTimer.singleShot(100, self.run_entrance_animation)
+
+    def navigate_to_page(self, page_index):
+        """ניווט לעמוד מסוים"""
+        self.stack.setCurrentIndex(page_index)
+
 
     def create_sidebar(self):
         sidebar = QWidget()
@@ -400,7 +412,7 @@ class MainWindow(QMainWindow):
         
         home_btn = AnimatedSidebarButton("דף הבית", "home")
         home_btn.setChecked(True)
-        home_btn.clicked.connect(lambda: self.stack.setCurrentIndex(0))
+        home_btn.clicked.connect(lambda: self.navigate_to_page(0))
         layout.addWidget(home_btn)
         
         groups_btn = AnimatedSidebarButton("קבוצות", "user-group")
@@ -472,142 +484,157 @@ class MainWindow(QMainWindow):
         
         layout.addWidget(welcome_card)
 
-        stats_container = QWidget()
-        stats_layout = QHBoxLayout(stats_container)
-        stats_layout.setSpacing(20)
+        # Main content container - horizontal layout for 50/50 split
+        main_content_container = QWidget()
+        main_content_container.setMaximumHeight(400)
+        main_content_container.setMinimumHeight(350)
+        main_content_layout = QHBoxLayout(main_content_container)
+        main_content_layout.setSpacing(20)
         
+        # טעינת נתונים אמיתיים מהקובץ החדש
+        dashboard_data = get_all_dashboard_data()
+        
+        # Left side - Statistics cards (50% width) - vertical layout
+        stats_container = QWidget()
+        stats_container.setMaximumWidth(int(self.width() * 0.5))
+        stats_container.setMaximumHeight(350)
+        stats_layout = QVBoxLayout(stats_container)
+        stats_layout.setSpacing(15)
+        
+        # Students card - עם נתונים אמיתיים
         students_card = AnimatedCard()
+        students_card.setMaximumHeight(100)
         students_layout = QVBoxLayout(students_card)
+        students_layout.setContentsMargins(10, 10, 10, 10)
         
         students_title = QLabel("תלמידות")
-        students_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50;")
+        students_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50;")
+        students_title.setAlignment(Qt.AlignCenter)
         
-        students_count = QLabel("42")
-        students_count.setStyleSheet("font-size: 36px; font-weight: bold; color: #e74c3c;")
+        students_count = QLabel(str(dashboard_data['total_students']))
+        students_count.setStyleSheet("font-size: 28px; font-weight: bold; color: #e74c3c;")
+        students_count.setAlignment(Qt.AlignCenter)
         
         students_layout.addWidget(students_title)
         students_layout.addWidget(students_count)
         
+        # Groups card - עם נתונים אמיתיים
         groups_card = AnimatedCard()
+        groups_card.setMaximumHeight(100)
         groups_layout = QVBoxLayout(groups_card)
+        groups_layout.setContentsMargins(10, 10, 10, 10)
         
         groups_title = QLabel("קבוצות")
-        groups_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50;")
+        groups_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50;")
+        groups_title.setAlignment(Qt.AlignCenter)
         
-        groups_count = QLabel("8")
-        groups_count.setStyleSheet("font-size: 36px; font-weight: bold; color: #3498db;")
+        groups_count = QLabel(str(dashboard_data['total_groups']))
+        groups_count.setStyleSheet("font-size: 28px; font-weight: bold; color: #3498db;")
+        groups_count.setAlignment(Qt.AlignCenter)
         
         groups_layout.addWidget(groups_title)
         groups_layout.addWidget(groups_count)
         
+        # Payments card - עם נתונים אמיתיים
         payments_card = AnimatedCard()
+        payments_card.setMaximumHeight(100)
         payments_layout = QVBoxLayout(payments_card)
+        payments_layout.setContentsMargins(10, 10, 10, 10)
         
         payments_title = QLabel("תשלומים החודש")
-        payments_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50;")
+        payments_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50;")
+        payments_title.setAlignment(Qt.AlignCenter)
         
-        payments_amount = QLabel("₪ 12,450")
-        payments_amount.setStyleSheet("font-size: 36px; font-weight: bold; color: #2ecc71;")
+        payments_amount = QLabel(format_currency(dashboard_data['monthly_payments']))
+        payments_amount.setStyleSheet("font-size: 28px; font-weight: bold; color: #2ecc71;")
+        payments_amount.setAlignment(Qt.AlignCenter)
         
         payments_layout.addWidget(payments_title)
         payments_layout.addWidget(payments_amount)
         
+        # Add all stats cards vertically
         stats_layout.addWidget(students_card)
         stats_layout.addWidget(groups_card)
         stats_layout.addWidget(payments_card)
         
-        layout.addWidget(stats_container)
-        
+        # Right side - Progress card (50% width)
         progress_card = AnimatedCard()
-        progress_layout = QHBoxLayout(progress_card)
+        progress_card.setMaximumWidth(int(self.width() * 0.5))
+        progress_card.setMaximumHeight(350)
+        progress_layout = QVBoxLayout(progress_card)
+        progress_layout.setContentsMargins(15, 15, 15, 15)
         
         progress_info = QVBoxLayout()
         progress_title = QLabel("נוכחות חודשית")
-        progress_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50;")
+        progress_title.setStyleSheet("font-size: 16px; font-weight: bold; color: #2c3e50;")
+        progress_title.setAlignment(Qt.AlignCenter)
+        
         progress_subtitle = QLabel("ממוצע נוכחות בכל הקבוצות")
-        progress_subtitle.setStyleSheet("font-size: 14px; color: #7f8c8d;")
+        progress_subtitle.setStyleSheet("font-size: 12px; color: #7f8c8d;")
+        progress_subtitle.setAlignment(Qt.AlignCenter)
         
         progress_info.addWidget(progress_title)
         progress_info.addWidget(progress_subtitle)
-        progress_info.addStretch()
         
         progress_circle = CircularProgress()
-        QTimer.singleShot(800, lambda: progress_circle.animate_progress(0, 75))
+        progress_circle.setMinimumSize(250, 250)
+        progress_circle.setMaximumSize(280, 280)
+        progress_circle.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
+        # שימוש בנתון האמיתי של הנוכחות
+        QTimer.singleShot(800, lambda: progress_circle.animate_progress(0, dashboard_data['attendance_percentage']))
         
         progress_layout.addLayout(progress_info)
-        progress_layout.addWidget(progress_circle)
+        progress_layout.addWidget(progress_circle, 0, Qt.AlignCenter)
         
-        layout.addWidget(progress_card)
+        # Add both sides to main content
+        main_content_layout.addWidget(stats_container)
+        main_content_layout.addWidget(progress_card)
         
-        actions_card = AnimatedCard()
-        actions_layout = QVBoxLayout(actions_card)
+        layout.addWidget(main_content_container)
         
-        actions_title = QLabel("פעולות מהירות")
-        actions_title.setStyleSheet("font-size: 18px; font-weight: bold; color: #2c3e50;")
-        actions_layout.addWidget(actions_title)
-        
-        buttons_layout = QHBoxLayout()
-        
-        add_student_btn = QPushButton("הוספת תלמידה")
-        add_student_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #3498db;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #2980b9;
-            }
-        """)
-        add_student_btn.setCursor(Qt.PointingHandCursor)
-        add_student_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
-        
-        add_group_btn = QPushButton("הוספת קבוצה")
-        add_group_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #2ecc71;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #27ae60;
-            }
-        """)
-        add_group_btn.setCursor(Qt.PointingHandCursor)
-        add_student_btn.clicked.connect(lambda: self.stack.setCurrentIndex(1))
+        embedded_groups_page = GroupsPage(self.stack)
+        layout.addWidget(embedded_groups_page)
 
-        record_payment_btn = QPushButton("רישום תשלום")
-        record_payment_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #e74c3c;
-                color: white;
-                border: none;
-                padding: 10px 20px;
-                border-radius: 5px;
-                font-weight: bold;
-            }
-            QPushButton:hover {
-                background-color: #c0392b;
-            }
-        """)
-        record_payment_btn.setCursor(Qt.PointingHandCursor)
-        
-        buttons_layout.addWidget(add_student_btn)
-        buttons_layout.addWidget(add_group_btn)
-        buttons_layout.addWidget(record_payment_btn)
-        
-        actions_layout.addLayout(buttons_layout)
-        
-        layout.addWidget(actions_card)
         layout.addStretch()
         
         return page
+
+    def on_page_changed(self, index):
+        """נקראת כאשר משנים עמוד"""
+        if index == 0:  # אם חזרנו לעמוד הבית
+            self.refresh_home_page()
+
+    def refresh_home_page(self):
+        try:
+            # טעינת נתונים חדשים
+            dashboard_data = get_all_dashboard_data()
+            
+            # מציאת הלייבלים ועדכונם
+            home_widget = self.stack.widget(0)
+            
+            # חיפוש כל הלייבלים בעמוד הבית ועדכונם
+            labels = home_widget.findChildren(QLabel)
+            
+            for label in labels:
+                text = label.text()
+                # עדכון מספר התלמידות
+                if text.isdigit() and label.styleSheet().find("color: #e74c3c") != -1:
+                    label.setText(str(dashboard_data['total_students']))
+                # עדכון מספר הקבוצות  
+                elif text.isdigit() and label.styleSheet().find("color: #3498db") != -1:
+                    label.setText(str(dashboard_data['total_groups']))
+                # עדכון התשלומים
+                elif "₪" in text:
+                    label.setText(format_currency(dashboard_data['monthly_payments']))
+            
+            # עדכון אחוז הנוכחות
+            progress_widgets = home_widget.findChildren(CircularProgress)
+            for progress in progress_widgets:
+                progress.animate_progress(0, dashboard_data['attendance_percentage'])
+                
+        except Exception as e:
+            print(f"שגיאה בעדכון עמוד הבית: {e}")
+
 
     def run_entrance_animation(self):
         sidebar_animation = QPropertyAnimation(self.sidebar, b"pos")
