@@ -219,7 +219,6 @@ def get_total_payments_amount():
                                     total_payments += float(amount.replace(',', ''))
                                 except ValueError:
                                     continue
-                    
         return int(total_payments)
     except Exception:
         return 0

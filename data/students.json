@@ -5,13 +5,18 @@
             "name": "תמר לוין",
             "phone": "0583202635",
             "group": "היפ הופ",
-            "payment_status": "חוב: 1350.0₪",
+            "payment_status": "חוב: 1050.0₪",
             "join_date": "2025/05/20",
             "payments": [
                 {
                     "amount": "150",
                     "date": "20/05/2025",
                     "payment_method": "מזומן"
+                },
+                {
+                    "amount": "300",
+                    "date": "28/05/2025",
+                    "payment_method": "אשראי"
                 }
             ]
         },
@@ -57,6 +62,42 @@
                     "payment_method": "צק"
                 }
             ]
+        },
+        {
+            "id": "214785693",
+            "name": "חני קאהן",
+            "phone": "025786934",
+            "group": "היפ הופ",
+            "payment_status": "חוב",
+            "join_date": "2025/05/28"
+        },
+        {
+            "id": "214901152",
+            "name": "לאה מונק",
+            "phone": "0583264596",
+            "group": "היפ הופ",
+            "payment_status": "שולם",
+            "join_date": "2025/05/28",
+            "payments": [
+                {
+                    "amount": "1200",
+                    "date": "12/02/2025",
+                    "payment_method": "מזומן"
+                },
+                {
+                    "amount": "1000",
+                    "date": "28/05/2025",
+                    "payment_method": "מזומן"
+                }
+            ]
+        },
+        {
+            "id": "215639856",
+            "name": "אסתר קונופיאטי",
+            "phone": "0504178452",
+            "group": "היפ הופ",
+            "payment_status": "חוב",
+            "join_date": "2025/05/28"
         }
     ]
 }
