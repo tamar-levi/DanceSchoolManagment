@@ -130,7 +130,7 @@ class GroupsPage:
     def create_group_card(self, group):
         """Create a modern group card with edit and delete options"""
         # חישוב מחיר הקורס המלא
-        course_total_price = self.get_course_total_price(group)
+        # course_total_price = self.get_course_total_price(group)
         
         return ft.Container(
             content=ft.Column([
@@ -171,16 +171,16 @@ class GroupsPage:
                     ], spacing=4, expand=True),
                     ft.Column([
                         ft.Text(
-                            course_total_price,  # מחיר הקורס המלא במקום המחיר החודשי
+                            # course_total_price,  # מחיר הקורס המלא במקום המחיר החודשי
                             size=16,
                             weight=ft.FontWeight.BOLD,
                             color="#48bb78"
                         ),
-                        ft.Text(
-                            "מחיר קורס מלא",  # הבהרה שזה מחיר הקורס המלא
-                            size=10,
-                            color="#a0aec0"
-                        ),
+                        # ft.Text(
+                        #     "מחיר קורס מלא",  # הבהרה שזה מחיר הקורס המלא
+                        #     size=10,
+                        #     color="#a0aec0"
+                        # ),
                         ft.Text(
                             f"התחלה: {group.get('group_start_date', 'לא צוין')}",
                             size=12,
