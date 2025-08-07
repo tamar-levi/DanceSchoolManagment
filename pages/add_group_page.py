@@ -4,6 +4,7 @@ from utils.add_group_validator import AddGroupValidator
 from components.add_group_components import AddGroupComponents
 
 class AddGroupPage:
+    
     def __init__(self, page, navigation_callback, groups_page):
         self.page = page
         self.navigation_callback = navigation_callback
