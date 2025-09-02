@@ -1,5 +1,6 @@
 import json
 from datetime import datetime, timedelta
+from utils.date_utils import DateUtils
 from utils.manage_json import ManageJSON  
 
 class PaymentCalculator:
@@ -10,6 +11,8 @@ class PaymentCalculator:
         self.groups_file_path = data_dir / "groups.json"
         self.students_file_path = data_dir / "students.json"
         self.joining_dates_file_path = data_dir / "joining_dates.json"
+        self.pricing_config_file = data_dir / "pricing.json"
+        self.load_pricing_config()
 
     
     def load_groups(self):
@@ -44,6 +47,27 @@ class PaymentCalculator:
         except Exception as e:
             print(f"Error loading dates: {e}")
             return []
+        
+    def load_pricing_config(self):
+        try:
+            if self.pricing_config_file.exists():
+                with open(self.pricing_config_file, "r", encoding="utf-8") as f:
+                    config = json.load(f)
+                    self.base_price = config.get("single", 180)
+                    self.price_two_groups = config.get("two", 280)
+                    self.price_three_plus = config.get("three", 360)
+                    self.sister_discount_amount = config.get("sister", 20)
+            else:
+                self.base_price = self.base_price
+                self.price_two_groups = 280
+                self.price_three_plus = 360
+                self.sister_discount_amount = 20
+        except Exception as e:
+            print(f"Error loading pricing config, using defaults: {e}")
+            self.base_price = self.base_price
+            self.price_two_groups = 280
+            self.price_three_plus = 360
+            self.sister_discount_amount = 20
     
     def get_student_join_date_for_group(self, student_id, group_id):
         try:
@@ -195,7 +219,7 @@ class PaymentCalculator:
             discount_applies = period["discount_applies"]
             has_sister = student.get("has_sister", False)
             
-            base_price = 180
+            base_price = self.base_price
             if discount_applies and num_groups > 1:
                 monthly_price = self.calculate_multiple_groups_discount(base_price, num_groups)
             else:
@@ -360,21 +384,24 @@ class PaymentCalculator:
     
     def calculate_multiple_groups_discount(self, base_price, num_groups):
         if num_groups == 1:
-            return base_price
+            return self.base_price
         elif num_groups == 2:
-            return 280
+            return self.price_two_groups
         elif num_groups >= 3:
-            return 380
+            return self.price_three_plus
         else:
-            return base_price
+            return self.base_price
     
     def calculate_sister_discount(self, price, has_sister):
         if has_sister:
-            return max(0, price - 20)  
+            return max(0, price - self.sister_discount_amount)
         return price
     
-    def calculate_monthly_price_with_discounts(self, student_id, base_price=180):
+    def calculate_monthly_price_with_discounts(self, student_id, base_price=None):
         try:
+            if base_price is None:
+                base_price = self.base_price
+
             student = self.get_student_by_id(student_id)
             if not student:
                 return {
@@ -560,8 +587,8 @@ class PaymentCalculator:
                 "error": f"Group with ID {group_id} not found"
             }
         
-        monthly_price = float(group.get("price", 180))  
-        
+        monthly_price = float(group.get("price", self.base_price))
+    
         return group, {"monthly_price": monthly_price}
     
     def _create_payment_result(self, student_or_group, monthly_price, total_months, first_month_meetings, 
@@ -876,7 +903,7 @@ class PaymentCalculator:
                         "student_name": student.get("name", ""),
                         "groups": student.get("groups", []),
                         "has_sister": student.get("has_sister", False),
-                        "join_date": student.get("join_date", ""),
+                        "join_date": DateUtils.get_join_date_by_id(student.get("id")),
                         "payment_status": student.get("payment_status", ""),
                         "monthly_price": price_calc["final_monthly_price"],
                         "num_groups": price_calc["num_groups"],
@@ -1099,7 +1126,7 @@ class PaymentCalculator:
                 summary_lines.append(f"תקופה {i}: {start_date} - {end_date}")
                 summary_lines.append(f"  קבוצות: {', '.join(period_groups)} ({num_groups} קבוצות)")
                 
-                base_price = 180
+                base_price = self.base_price
                 base_total = base_price * num_groups
                 summary_lines.append(f"  מחיר בסיס: {base_total}₪ ({base_price}₪ × {num_groups})")
                 
@@ -1107,14 +1134,14 @@ class PaymentCalculator:
                     if discount_applies:
                         groups_discount = base_total - monthly_price
                         if has_sister:
-                            groups_discount -= 20  
+                            groups_discount -= self.sister_discount_amount
                         summary_lines.append(f"  הנחת קבוצות מרובות: -{groups_discount}₪")
                         summary_lines.append(f"  ההנחה חלה כי: {reason}")
                     else:
                         summary_lines.append(f"  ללא הנחת קבוצות - {reason}")
                 
                 if has_sister:
-                    summary_lines.append(f"  הנחת אחיות: -20₪")
+                    summary_lines.append(f"  הנחת אחיות: -{self.sister_discount_amount}₪")
                 
                 summary_lines.append(f"  מחיר חודשי סופי: {monthly_price}₪")
                 
@@ -1240,7 +1267,7 @@ class PaymentCalculator:
                     discount_status = "קבוצה אחת"
             else:
                 print("DEBUG: No periods found, using fallback calculation")
-                base_price = 180
+                base_price = self.base_price
                 current_monthly_price = base_price * num_groups
                 
                 if num_groups > 1:
@@ -1282,5 +1309,3 @@ class PaymentCalculator:
             import traceback
             traceback.print_exc()
             return "שגיאה בהצגת סיכום התשלום"
-
-    

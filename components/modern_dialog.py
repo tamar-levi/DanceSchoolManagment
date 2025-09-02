@@ -9,7 +9,7 @@ class ModernDialog:
     def show_success(self, message, callback=None):
         """Show success dialog"""
         self._show_dialog(
-            "הצלחה",
+            "הידד",
             message,
             ft.Icons.CHECK_CIRCLE,
             ft.Colors.GREEN_600,

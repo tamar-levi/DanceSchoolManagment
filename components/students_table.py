@@ -1,5 +1,6 @@
 import flet as ft
 from typing import List, Dict, Any
+from utils.date_utils import DateUtils
 from utils.payment_utils import PaymentCalculator
 
 class StudentsTable:
@@ -75,7 +76,7 @@ class StudentsTable:
         payment_status = student.get("payment_status", "")
         amount = self.calculate_total_paid_advanced(student.get("payments", []))
         payment_color, payment_bg, payment_icon, display_text = self._get_payment_style(
-            payment_status, amount, student.get('groups', []), student.get("join_date"), student_id
+            payment_status, amount, student.get('groups', []), DateUtils.get_join_date_by_id(student.get("id")) or student.get("join_date"), student_id
         )
 
         cell_style = {
@@ -157,7 +158,7 @@ class StudentsTable:
                 ),
                 ft.Container(
                     content=ft.Text(
-                        student.get("join_date", ""),
+                        DateUtils.get_join_date_by_id(student.get("id")),
                         size=13,
                         text_align=ft.TextAlign.CENTER,
                         color=ft.Colors.BLUE_GREY_700

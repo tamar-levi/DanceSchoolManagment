@@ -103,8 +103,9 @@ class MainApp:
         attendance_btn = self.create_sidebar_button("נוכחות", ft.Icons.CHECK_CIRCLE, 2, self.current_page_index == 2)
         payment_btn = self.create_sidebar_button("תשלומים", ft.Icons.CREDIT_CARD, 3, self.current_page_index == 3)
         students_btn = self.create_sidebar_button("רשימת התלמידות", ft.Icons.LIST, 4, self.current_page_index == 4)
+        settings_btn = self.create_sidebar_button("תמחור", ft.Icons.ATTACH_MONEY, 5, self.current_page_index == 5)
 
-        self.sidebar_buttons = [home_btn, groups_btn, attendance_btn, payment_btn, students_btn]
+        self.sidebar_buttons = [home_btn, groups_btn, attendance_btn, payment_btn, students_btn, settings_btn]
 
         def toggle_dark_mode(e):
             self.toggle_dark_mode(e.control.value)
@@ -132,6 +133,7 @@ class MainApp:
                     attendance_btn,
                     payment_btn,
                     students_btn,
+                    settings_btn,
                 ], spacing=5),
                 padding=ft.padding.symmetric(horizontal=10, vertical=20),
             ),
@@ -175,6 +177,10 @@ class MainApp:
         elif page_index == 4:
             students_page = StudentsListPage(self.page, self.handle_navigation)
             self.content_area.content = students_page.get_view()
+        elif page_index == 5:
+            from pages.pricing_settings_page import PricingSettingsPage
+            pricing_page = PricingSettingsPage(self.page, self.handle_navigation)
+            self.content_area.content = pricing_page.get_view()
         self.page.update()
 
     def handle_navigation(self, page_instance, page_index=None):

@@ -1,8 +1,10 @@
+import json
 import flet as ft
 from components.modern_dialog import ModernDialog
+from utils.manage_json import ManageJSON
 from utils.validation import ValidationUtils
 from utils.payment_utils import PaymentCalculator
-
+from utils.date_utils import DateUtils
 
 class StudentEditView:
     """View for editing student information with modern React-like styling"""
@@ -18,6 +20,9 @@ class StudentEditView:
         self.payment_field = None
         self.join_date_field = None
         self.has_sister_checkbox= None
+
+    def _get_join_date(self):
+        return DateUtils.get_join_date_by_id(self.student.get("id"))
 
     def render(self):
         """Render the edit form with modern styling"""
@@ -207,10 +212,9 @@ class StudentEditView:
         
         self.join_date_field = self._create_modern_text_field(
             label="תאריך הצטרפות",
-            value=self.student['join_date'],
+            value=self._get_join_date() or self.student['join_date'],
             icon=ft.Icons.CALENDAR_TODAY_OUTLINED,
             hint="dd/mm/yyyy או dd-mm-yyyy או dd.mm.yyyy",
-            suffix="📅"
         )
         
         group_display = ft.Container(
@@ -430,6 +434,29 @@ class StudentEditView:
         
         return False, "פורמט תאריך לא תקין. דוגמאות תקינות: 25/12/2023, 2023/12/25, 25-12-2023"
 
+    def _update_joining_dates(self, student_id: str, name: str, join_date: str):
+        try:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            joining_dates_file = data_dir / "joining_dates.json"
+
+            if joining_dates_file.exists():
+                with open(joining_dates_file, "r", encoding="utf-8") as f:
+                    joining_dates = json.load(f)
+            else:
+                joining_dates = {"1": []}
+
+            for group in joining_dates.values():
+                for student in group:
+                    if student.get("student_id") == student_id:
+                        student["student_name"] = name
+                        student["join_date"] = join_date
+                        break
+
+            with open(joining_dates_file, "w", encoding="utf-8") as f:
+                json.dump(joining_dates, f, ensure_ascii=False, indent=2)
+
+        except Exception as e:
+            print(f"Error updating joining_dates for student {student_id}: {e}")
 
     def _save_student(self, e):
         """Save student changes with validation and loading state"""
@@ -482,11 +509,17 @@ class StudentEditView:
         )
         
         self._set_loading_state(False)
-        
+
         if success:
+            self._update_joining_dates(
+                student_id=self.student['id'],
+                name=form_data["name"],
+                join_date=date_result
+            )
             self._show_success_message()
         else:
             self.dialog.show_error("שגיאה בשמירת התלמידה")
+
 
     def _set_loading_state(self, loading):
         """Set loading state for save button"""

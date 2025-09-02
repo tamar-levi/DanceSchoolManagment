@@ -314,7 +314,7 @@ class AddGroupPage:
             return
         
         if not self._validate_all_fields():
-            AddGroupComponents.show_error_dialog(self.page, "יש לתקן את השגיאות בטופס")
+            AddGroupComponents.show_error_dialog(self.page, "ישנם ערכים חסרים או שגויים. בדוק את הטופס ותקן בהתאם")
             return
         
         price_value = self.form_state['price'].strip()
