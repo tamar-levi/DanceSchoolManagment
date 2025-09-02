@@ -591,7 +591,7 @@ class AttendanceTableView:
 
     
     def on_page_resume(self):
-        """פונקציה שנקראת כשחוזרים לעמוד - לשימוש בניווט"""
+        """Function called when returning to the page - for use in navigation"""
         try:
             print("Page resumed - refreshing table")
             self.force_refresh_from_external()
@@ -599,7 +599,7 @@ class AttendanceTableView:
             print(f"Error in on_page_resume: {e}")
     
     def refresh_table(self):
-        """Refresh the table data and view - פונקציה נוספת לרענון כללי"""
+        """Refresh the table data and view """
         try:
             self.update_table_instantly()
         except Exception as e:

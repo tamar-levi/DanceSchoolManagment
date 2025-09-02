@@ -40,7 +40,7 @@ class GroupsPage:
         self.build_group_buttons()
 
     def get_course_total_price(self, group):
-        """חישוב מחיר הקורס המלא"""
+        """Calculating the full course price"""
         try:
             group_id = group.get("id")
             start_date = group.get("group_start_date")
@@ -263,7 +263,7 @@ class GroupsPage:
                 content=ft.Column([
                     ft.Icon(ft.Icons.ERROR_OUTLINE, size=48, color="#f56565"),
                     ft.Text(
-                        "שגיאה בטעינת קבוצות",
+                        "לא נמצאו קבוצות קיימות",
                         size=18,
                         weight=ft.FontWeight.BOLD,
                         color="#1a202c"

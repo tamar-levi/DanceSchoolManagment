@@ -39,7 +39,7 @@ class GroupDetailsPage:
             return
         
     def back_to_home(self, page_instance=None, page_index=None):
-        """חזרה לעמוד הבית"""
+        """Return to home page"""
         self.navigation_callback(None, 0)
         
     def get_view(self):

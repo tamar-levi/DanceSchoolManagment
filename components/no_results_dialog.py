@@ -67,7 +67,7 @@ class NoResultsDialog:
 
 
 class NoResultsDialogAlternative:
-    """No results dialog component - פתרון חלופי"""
+    """No results dialog component """
     
     @staticmethod
     def show(page: ft.Page):

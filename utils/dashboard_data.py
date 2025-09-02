@@ -107,7 +107,7 @@ def get_monthly_attendance_percentage():
         return 75 
 
 def get_all_time_attendance_percentage():
-    """מחזירה את אחוז הנוכחות הכללי (כל הזמנים)"""
+    """Returns the overall attendance percentage (all time)"""
     try:
         total_present = 0
         total_records = 0
@@ -144,7 +144,7 @@ def get_all_time_attendance_percentage():
 
 
 def get_attendance_statistics():
-    """מחזירה סטטיסטיקות מפורטות על נוכחות"""
+    """Returns detailed attendance statistics"""
     try:
         total_present = 0
         total_absent = 0
@@ -189,7 +189,7 @@ def get_attendance_statistics():
 
 
 def get_total_payments_amount():
-    """מחזירה את סכום כל התשלומים שהתקבלו"""
+    """Returns the amount of all payments received"""
     try:
         total_payments = 0
         
@@ -218,7 +218,7 @@ def get_total_payments_amount():
         return 0
 
 def get_students_by_payment_status():
-    """מחזירה סטטיסטיקות על סטטוס תשלומים של התלמידות"""
+    """Returns statistics on the payment status of the students"""
     try:
         paid_count = 0
         debt_count = 0
@@ -244,7 +244,7 @@ def get_students_by_payment_status():
         return {"paid": 0, "debt": 0}
 
 def get_groups_info():
-    """מחזירה מידע על הקבוצות"""
+    """Returns information about the groups"""
     try:
         data_dir = ManageJSON.get_appdata_path() / "data"
         groups_file = data_dir / "groups.json"
@@ -262,7 +262,7 @@ def get_groups_info():
         return []
 
 def get_students_info():
-    """מחזירה מידע על התלמידות"""
+    """Returns information about the students"""
     try:
         data_dir = ManageJSON.get_appdata_path() / "data"
         students_file = data_dir / "students.json"
@@ -280,11 +280,11 @@ def get_students_info():
         return []
 
 def format_currency(amount):
-    """מעצבת סכום כסף בפורמט ישראלי"""
+    """Designing a sum of money in Israeli format"""
     return f"₪ {amount:,}".replace(',', ',')
 
 def get_all_dashboard_data():
-    """מחזירה את כל הנתונים לדשבורד במבנה אחד"""
+    """Returns all dashboard data in one structure"""
     attendance_stats = get_attendance_statistics()
     
     return {

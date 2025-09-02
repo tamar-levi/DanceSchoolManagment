@@ -165,7 +165,7 @@ class AddGroupComponents:
         )
         
         def close_dialog():
-            """פונקציה לסגירת הדיאלוג"""
+            """Function to close the dialog"""
             try:
                 if hasattr(dialog, 'open') and dialog.open:
                     dialog.open = False
@@ -176,7 +176,7 @@ class AddGroupComponents:
                 print(f"Error closing dialog: {e}")
         
         def auto_close():
-            """סגירה אוטומטית אחרי 2.5 שניות"""
+            """Automatically closes after 2.5 seconds"""
             time.sleep(2.5)
             close_dialog()
         
