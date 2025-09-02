@@ -1,14 +1,17 @@
 import json
-import os
 from typing import List, Dict, Any
-
+from utils.manage_json import ManageJSON
 
 class StudentsDataManager:
     """Manager for students data operations"""
     
     def __init__(self):
-        self.students_file = "data/students.json"
-        self.groups_file = "data/groups.json"
+        data_dir = ManageJSON.get_appdata_path() / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        
+        self.students_file = data_dir / "students.json"
+        self.groups_file = data_dir / "groups.json"
+
 
     def load_students(self):
         """Load students from JSON file"""
@@ -163,9 +166,10 @@ class StudentsDataManager:
                 print(f"Group '{group_name}' not found")
                 return False
             
-            attendance_file = f"attendances/attendance_{group_id}.json"
+            attendances_dir = ManageJSON.get_appdata_path() / "attendances"
+            attendance_file = attendances_dir / f"attendance_{group_id}.json"
             
-            if not os.path.exists(attendance_file):
+            if not attendance_file.exists():
                 print(f"Attendance file {attendance_file} not found")
                 return True  
             
@@ -305,7 +309,6 @@ class StudentsDataManager:
             
             for student in students:
                 if "group" in student and "groups" not in student:
-                    # Convert old format to new format
                     old_group = student["group"]
                     student["groups"] = [old_group] if old_group else []
                     del student["group"]

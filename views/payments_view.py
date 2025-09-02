@@ -1,10 +1,10 @@
 import flet as ft
+import json
+from utils.manage_json import ManageJSON  
 from components.modern_card import ModernCard
 from components.clean_button import CleanButton
 from components.modern_dialog import ModernDialog
 from utils.payment_utils import PaymentCalculator
-import os
-import json
 
 class PaymentsView:
     """View for managing student payments"""
@@ -19,24 +19,27 @@ class PaymentsView:
         self.load_student_data()
 
     def load_student_data(self):
-            """Load fresh student data from file"""
-            try:
-                if os.path.exists("data/students.json"):
-                    with open("data/students.json", "r", encoding="utf-8") as f:
-                        students_data = json.load(f)
-                        
-                    for student in students_data.get("students", []):
-                        if student.get("id") == self.student_id:
-                            self.student = student
-                            break
+        """Load fresh student data from file"""
+        try:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            students_file = data_dir / "students.json"
+            
+            if students_file.exists():
+                with open(students_file, "r", encoding="utf-8") as f:
+                    students_data = json.load(f)
                     
-                    if not self.student:
-                        self.student = {"id": self.student_id, "name": "תלמיד לא נמצא", "payments": []}
-                else:
-                    self.student = {"id": self.student_id, "name": "קובץ לא נמצא", "payments": []}
-                    
-            except Exception as e:
-                self.student = {"id": self.student_id, "name": "שגיאה בטעינה", "payments": []}
+                for student in students_data.get("students", []):
+                    if student.get("id") == self.student_id:
+                        self.student = student
+                        break
+                
+                if not self.student:
+                    self.student = {"id": self.student_id, "name": "התלמידה לא נמצאה", "payments": []}
+            else:
+                self.student = {"id": self.student_id, "name": "קובץ לא נמצא", "payments": []}
+                
+        except Exception as e:
+            self.student = {"id": self.student_id, "name": "שגיאה בטעינה", "payments": []}
 
     def refresh_student_data(self):
         """Refresh student data from file"""

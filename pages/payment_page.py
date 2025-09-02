@@ -1,7 +1,7 @@
 import json
-import os
 import flet as ft
-from typing import List, Dict, Any
+from typing import Dict, Any
+from utils.manage_json import ManageJSON
 
 class PaymentPage:
     def __init__(self, page: ft.Page, navigation_handler=None):
@@ -14,8 +14,11 @@ class PaymentPage:
     def load_payments(self):
         """Load payments data from students.json"""
         try:
-            if os.path.exists("data/students.json"):
-                with open("data/students.json", "r", encoding="utf-8") as f:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            students_file = data_dir / "students.json"
+            
+            if students_file.exists():
+                with open(students_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     
                     for student in data.get("students", []):
@@ -186,7 +189,6 @@ class PaymentPage:
         """Create a modern table row for a payment"""
         row_color = ft.Colors.WHITE
         
-        # Payment method styling
         payment_method = payment["payment_method"]
         check_number = payment.get("check_number", "")
         
@@ -349,7 +351,6 @@ class PaymentPage:
 
     def get_view(self):
         """Get the modern main view of the payment page"""
-        # Modern title with icon
         title_container = ft.Container(
             content=ft.Column([
                 ft.Row([
@@ -374,14 +375,12 @@ class PaymentPage:
             alignment=ft.alignment.center
         )
 
-        # Statistics section
         stats_section = ft.Container(
             content=self.create_stats_section(),
             margin=ft.margin.only(bottom=32),
             alignment=ft.alignment.center
         )
 
-        # Table section
         table_container = ft.Container(
             content=ft.Column([
                 self.create_payments_table(),
@@ -399,7 +398,6 @@ class PaymentPage:
             clip_behavior=ft.ClipBehavior.HARD_EDGE
         )
 
-        # Back button - smaller and centered
         back_button = ft.Container(
             content=ft.ElevatedButton(
                 content=ft.Row([
@@ -422,7 +420,6 @@ class PaymentPage:
             margin=ft.margin.only(top=20)
         )
 
-        # Main content
         main_content = ft.Container(
             content=ft.Column([
                 title_container,

@@ -1,11 +1,10 @@
 import json
-import os
 import flet as ft
 from typing import Dict, Any
 from views.attendance_table_view import AttendanceTableView 
 import datetime
 from utils.attendance_utils import AttendanceUtils
-
+from utils.manage_json import ManageJSON
 
 class AttendanceCheckBox:
     def __init__(self, date: str, student_id: str, parent_page, is_checked: bool = False):
@@ -74,10 +73,12 @@ class GroupAttendancePage:
         
     def load_attendance(self):
         """Load attendance data from JSON file"""
-        path = f"attendances/attendance_{self.group.get('id', '')}.json"
-        if os.path.exists(path):
+        attendances_dir = ManageJSON.get_appdata_path() / "attendances"
+        attendance_file = attendances_dir / f"attendance_{self.group.get('id', '')}.json"
+        
+        if attendance_file.exists():
             try:
-                with open(path, "r", encoding="utf-8") as f:
+                with open(attendance_file, "r", encoding="utf-8") as f:
                     self.attendance_data = json.load(f)
             except Exception as e:
                 print(f"Error loading attendance: {e}")
@@ -88,8 +89,11 @@ class GroupAttendancePage:
     def load_students(self):
         """Load students for this group"""
         try:
-            if os.path.exists("data/students.json"):
-                with open("data/students.json", "r", encoding="utf-8") as f:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            students_file = data_dir / "students.json"
+            
+            if students_file.exists():
+                with open(students_file, "r", encoding="utf-8") as f:
                     students_data = json.load(f)
                     self.students = []  
                     
@@ -108,13 +112,17 @@ class GroupAttendancePage:
             print(f"Error loading students: {e}")
             self.students = []
 
+    
     def load_data(self):
         """Load attendance and student data - FIXED VERSION"""
         self.attendance_data = AttendanceUtils.load_attendance_file(self.group.get('id', ''))
         
         try:
-            if os.path.exists("data/students.json"):
-                with open("data/students.json", "r", encoding="utf-8") as f:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            students_file = data_dir / "students.json"
+            
+            if students_file.exists():
+                with open(students_file, "r", encoding="utf-8") as f:
                     students_data = json.load(f)
                     self.students = []
                     
@@ -136,9 +144,11 @@ class GroupAttendancePage:
     def save_attendance(self):
         """Save attendance data to JSON file"""
         try:
-            os.makedirs("attendances", exist_ok=True)
-            path = f"attendances/attendance_{self.group.get('id', '')}.json"
-            with open(path, "w", encoding="utf-8") as f:
+            attendances_dir = ManageJSON.get_appdata_path() / "attendances"
+            attendances_dir.mkdir(parents=True, exist_ok=True)
+            attendance_file = attendances_dir / f"attendance_{self.group.get('id', '')}.json"
+            
+            with open(attendance_file, "w", encoding="utf-8") as f:
                 json.dump(self.attendance_data, f, ensure_ascii=False, indent=2)
         except Exception as e:
             print(f"Error saving attendance: {e}")
@@ -324,7 +334,6 @@ class GroupAttendancePage:
             rtl=True,
         )
         
-        # Error message container
         error_message = ft.Container(
             content=ft.Row([
                 ft.Text("", size=12, color=ft.Colors.RED_500, rtl=True),
@@ -371,7 +380,6 @@ class GroupAttendancePage:
                 )
             )
         
-        # Compact date picker button
         date_picker_button = ft.Container(
             content=ft.Row([
                 ft.Icon(ft.Icons.CALENDAR_TODAY, size=18, color=ft.Colors.BLUE_600),
@@ -388,7 +396,6 @@ class GroupAttendancePage:
             width=140,
         )
         
-        # Create attendance selection for each student
         student_attendance = {}
         attendance_rows = []
         
@@ -402,21 +409,20 @@ class GroupAttendancePage:
                         is_present = student_attendance[student_id]
                         
                         if is_present:
-                            e.control.icon = ft.Icons.CHECK_CIRCLE  # ✅ שינוי האייקון
-                            e.control.icon_color = ft.Colors.GREEN_600  # ✅ שינוי צבע האייקון
-                            e.control.bgcolor = ft.Colors.GREEN_50  # ✅ שינוי רקע
+                            e.control.icon = ft.Icons.CHECK_CIRCLE
+                            e.control.icon_color = ft.Colors.GREEN_600
+                            e.control.bgcolor = ft.Colors.GREEN_50
                             e.control.tooltip = "נוכח - לחץ לשינוי"
                         else:
-                            e.control.icon = ft.Icons.CANCEL  # ✅ שינוי האייקון
-                            e.control.icon_color = ft.Colors.RED_500  # ✅ שינוי צבע האייקון
-                            e.control.bgcolor = ft.Colors.RED_50  # ✅ שינוי רקע
+                            e.control.icon = ft.Icons.CANCEL
+                            e.control.icon_color = ft.Colors.RED_500
+                            e.control.bgcolor = ft.Colors.RED_50
                             e.control.tooltip = "נעדר - לחץ לשינוי"
                         
-                        e.control.update()  # ✅ עדכון הקונטרול
+                        e.control.update()
                         
                     return toggle_attendance
                 
-                # ✅ שורת תלמיד עם IconButton שמתעדכן כמו שצריך
                 student_row = ft.Row([
                     ft.Text(
                         student["name"],
@@ -426,19 +432,18 @@ class GroupAttendancePage:
                         rtl=True,
                         expand=True,
                     ),
-                    # ✅ IconButton שמתחיל כ"נעדר" ומשתנה ל"נוכח"
                     ft.IconButton(
-                        icon=ft.Icons.CANCEL,  # ✅ מתחיל כנעדר
-                        icon_color=ft.Colors.RED_500,  # ✅ צבע אדום לנעדר
+                        icon=ft.Icons.CANCEL,  
+                        icon_color=ft.Colors.RED_500, 
                         icon_size=24,
                         tooltip="נעדר - לחץ לשינוי",
                         on_click=create_toggle_click(student["id"]),
-                        bgcolor=ft.Colors.RED_50,  # ✅ רקע אדום בהיר
+                        bgcolor=ft.Colors.RED_50,  
                         width=50,
                         height=50,
                         style=ft.ButtonStyle(
-                            shape=ft.CircleBorder(),  # ✅ עיגול יפה
-                            animation_duration=200,  # ✅ אנימציה חלקה
+                            shape=ft.CircleBorder(),
+                            animation_duration=200,  
                         ),
                     ),
                 ], 
@@ -447,7 +452,6 @@ class GroupAttendancePage:
                 spacing=10,
                 )
                 
-                # עטיפה בקונטיינר פשוט
                 wrapped_row = ft.Container(
                     content=student_row,
                     padding=ft.padding.all(12),
@@ -484,9 +488,7 @@ class GroupAttendancePage:
         def on_cancel(e):
             self.page.close(dlg)
 
-        # תוכן הדיאלוג - פשוט ונקי
         dialog_content = ft.Column([
-            # כותרת
             ft.Row([
                 ft.Column([
                     ft.Text("הוסף תאריך חדש", size=18, weight=ft.FontWeight.W_700, color=ft.Colors.GREY_800, rtl=True),
@@ -503,7 +505,6 @@ class GroupAttendancePage:
             
             ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
             
-            # בחירת תאריך
             ft.Column([
                 ft.Row([
                     ft.Text("בחירת תאריך:", size=14, weight=ft.FontWeight.W_600, color=ft.Colors.GREY_700, rtl=True),
@@ -517,7 +518,6 @@ class GroupAttendancePage:
             
             ft.Divider(height=20, color=ft.Colors.TRANSPARENT),
             
-            # כותרת תלמידים
             ft.Row([
                 ft.Text("סמן נוכחות תלמידות:", size=14, weight=ft.FontWeight.W_600, color=ft.Colors.GREY_700, rtl=True),
             ], alignment=ft.MainAxisAlignment.END),
@@ -526,7 +526,6 @@ class GroupAttendancePage:
             
         ], spacing=0, tight=True)
 
-        # הוספת רשימת התלמידים אם יש
         if attendance_rows:
             students_list = ft.ListView(
                 controls=attendance_rows,
@@ -544,7 +543,6 @@ class GroupAttendancePage:
             
             dialog_content.controls.append(students_container)
 
-        # Clean action buttons
         actions = [
             ft.Row([
                 ft.TextButton(

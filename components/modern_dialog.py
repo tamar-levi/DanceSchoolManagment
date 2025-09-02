@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class ModernDialog:
     """Modern dialog component for various use cases"""
     
@@ -51,20 +50,20 @@ class ModernDialog:
                     size=14, 
                     color=ft.Colors.GREY_700,
                     text_align=ft.TextAlign.RIGHT,
-                    rtl=True  # הוספת RTL
+                    rtl=True 
                 ),
                 ft.Text(
                     subtitle, 
                     size=12, 
-                    color=ft.Colors.GREY_700,  # שינוי מאדום לשחור
+                    color=ft.Colors.GREY_700, 
                     text_align=ft.TextAlign.RIGHT,
-                    rtl=True  # הוספת RTL
+                    rtl=True 
                 )
             ], 
             spacing=4, 
             tight=True, 
             alignment=ft.MainAxisAlignment.START,
-            horizontal_alignment=ft.CrossAxisAlignment.END  # יישור אופקי לימין
+            horizontal_alignment=ft.CrossAxisAlignment.END  
             ),
             actions=[
                 ft.TextButton("ביטול", on_click=handle_no),

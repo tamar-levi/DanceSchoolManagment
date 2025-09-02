@@ -7,7 +7,6 @@ from views.payments_view import PaymentsView
 from views.add_payment_view import AddPaymentView
 from components.modern_dialog import ModernDialog
 
-
 class StudentsPage:    
     def __init__(self, page, navigation_callback, group_name, came_from_home=False):
         self.page = page
@@ -15,13 +14,10 @@ class StudentsPage:
         self.group_name = group_name
         self.came_from_home = came_from_home  
         
-        # Data manager
         self.data_manager = StudentsDataManager()
         
-        # Dialog helper
         self.dialog = ModernDialog(page)
         
-        # Main layout
         self.layout = ft.Column(
             spacing=24,
             scroll=ft.ScrollMode.AUTO,

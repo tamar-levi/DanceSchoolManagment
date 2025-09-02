@@ -1,12 +1,16 @@
 import json
 import flet as ft
-from typing import List, Dict, Any, Optional
+from typing import Dict, Any
 from pages.group_attendance_page import GroupAttendancePage
+from utils.manage_json import ManageJSON
 
 def load_groups():
     """Load groups from JSON file"""
     try:
-        with open("data/groups.json", "r", encoding="utf-8") as file:
+        data_dir = ManageJSON.get_appdata_path() / "data"
+        groups_file = data_dir / "groups.json"
+        
+        with open(groups_file, "r", encoding="utf-8") as file:
             data = json.load(file)
             return data.get("groups", [])
     except Exception as e:
@@ -19,7 +23,6 @@ class AttendancePage:
         self.navigation_handler = navigation_handler
         self.groups = []
         
-        # Load groups data
         self.refresh_data()
 
     def refresh_data(self):
@@ -78,7 +81,7 @@ class AttendancePage:
             padding=ft.padding.all(30),
             margin=ft.margin.only(bottom=25),
             alignment=ft.alignment.center,
-            width=float('inf'),  # מלא רוחב
+            width=float('inf'), 
         )
 
     def show_group_attendance(self, group):
@@ -110,7 +113,6 @@ class AttendancePage:
                 )
             e.control.update()
 
-        # Group info
         group_info = []
         if group.get("description"):
             group_info.append(
@@ -125,7 +127,6 @@ class AttendancePage:
                 )
             )
 
-        # Members count
         members_count = len(group.get("members", []))
         if members_count > 0:
             group_info.append(
@@ -186,7 +187,7 @@ class AttendancePage:
                 offset=ft.Offset(0, 3),
             ),
             ink=True,
-            width=float('inf'),  # מלא רוחב
+            width=float('inf'),  
         )
 
     def create_groups_grid(self):
@@ -194,7 +195,6 @@ class AttendancePage:
         if not self.groups:
             return None
             
-        # יצירת שורות עם עד 3 קבוצות בכל שורה
         rows = []
         for i in range(0, len(self.groups), 3):
             group_batch = self.groups[i:i+3]
@@ -202,7 +202,6 @@ class AttendancePage:
             
             for group in group_batch:
                 group_button = self.create_group_button(group, i)
-                # כל קבוצה תופסת שליש מהרוחב
                 row_controls.append(
                     ft.Container(
                         content=group_button,
@@ -211,7 +210,6 @@ class AttendancePage:
                     )
                 )
             
-            # אם יש פחות מ-3 קבוצות בשורה, נוסיף containers ריקים
             while len(row_controls) < 3:
                 row_controls.append(ft.Container(expand=True))
             
@@ -232,7 +230,6 @@ class AttendancePage:
     def create_groups_card(self):
         """Create groups selection card with responsive grid layout"""
         if not self.groups:
-            # Empty state
             def refresh_groups(e):
                 self.refresh_data()
                 self.build_content()
@@ -277,7 +274,6 @@ class AttendancePage:
             )
             return self.create_clean_card(empty_content)
 
-        # Header for groups section
         groups_header = ft.Container(
             content=ft.Row([
                 ft.Icon(ft.Icons.LIST, size=24, color=ft.Colors.BLUE_600),
@@ -296,10 +292,8 @@ class AttendancePage:
             alignment=ft.alignment.center,
         )
 
-        # Create responsive grid for groups
         groups_grid = self.create_groups_grid()
 
-        # Create scrollable container for groups
         groups_content = ft.Column([
             groups_header,
             ft.Container(

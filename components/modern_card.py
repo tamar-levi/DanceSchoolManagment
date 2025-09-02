@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class ModernCard(ft.Container):
     """Modern card component with hover effects"""
     

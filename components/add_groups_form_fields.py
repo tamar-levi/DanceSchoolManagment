@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class FormFields:
     """Factory for creating consistent form fields"""
     

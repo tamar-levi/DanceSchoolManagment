@@ -1,6 +1,6 @@
 import flet as ft
 import json
-import os
+from utils.manage_json import ManageJSON
 
 class GroupDialogs:
     @staticmethod
@@ -203,7 +203,11 @@ class GroupDialogs:
         def check_group_name_exists(new_name, current_name):
             """Check if group name already exists (excluding current group)"""
             try:
-                with open("data/groups.json", "r", encoding="utf-8") as f:
+                data_dir = ManageJSON.get_appdata_path() / "data"
+                data_dir.mkdir(parents=True, exist_ok=True)
+                groups_file = data_dir / "groups.json"
+                
+                with open(groups_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 
                 existing_groups = data.get("groups", [])
@@ -222,10 +226,8 @@ class GroupDialogs:
 
         def save_changes(e):
             try:
-                # Hide any previous error
                 error_container.visible = False
                 
-                # בדיקת שם קבוצה כפול
                 new_group_name = name_field.value.strip() if name_field.value.strip() else "לא צוין"
                 current_group_name = group.get("name", "")
                 
@@ -233,7 +235,11 @@ class GroupDialogs:
                     show_error_dialog("קבוצה בשם זה כבר קיימת במערכת")
                     return
                 
-                with open("data/groups.json", "r", encoding="utf-8") as f:
+                data_dir = ManageJSON.get_appdata_path() / "data"
+                data_dir.mkdir(parents=True, exist_ok=True)
+                groups_file = data_dir / "groups.json"
+                
+                with open(groups_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 
                 groups = data.get("groups", [])
@@ -259,13 +265,14 @@ class GroupDialogs:
                         groups[i] = updated_group
                         break
                 
-                with open("data/groups.json", "w", encoding="utf-8") as f:
+                with open(groups_file, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                 
                 if old_group_name and old_group_name != new_group_name:
                     try:
-                        if os.path.exists("data/students.json"):
-                            with open("data/students.json", "r", encoding="utf-8") as f:
+                        students_file = data_dir / "students.json"
+                        if students_file.exists():
+                            with open(students_file, "r", encoding="utf-8") as f:
                                 students_data = json.load(f)
                             
                             students_updated = False
@@ -283,7 +290,7 @@ class GroupDialogs:
                                         students_updated = True
                             
                             if students_updated:
-                                with open("data/students.json", "w", encoding="utf-8") as f:
+                                with open(students_file, "w", encoding="utf-8") as f:
                                     json.dump(students_data, f, ensure_ascii=False, indent=2)
                             
                     except Exception as students_ex:
@@ -357,7 +364,6 @@ class GroupDialogs:
                             
                             ft.Container(height=16),
                             
-                            # Form fields
                             ft.ResponsiveRow([
                                 ft.Container(
                                     content=name_field,
@@ -391,10 +397,8 @@ class GroupDialogs:
                         margin=ft.margin.only(bottom=16)
                     ),
                     
-                    # Location and schedule section
                     ft.Container(
                         content=ft.Column([
-                            # Section header
                             ft.Row([
                                 ft.Container(
                                     content=ft.Icon(ft.Icons.LOCATION_ON_OUTLINED, color="#10b981", size=18),
@@ -446,10 +450,8 @@ class GroupDialogs:
                         margin=ft.margin.only(bottom=16)
                     ),
                     
-                    # Contact information section
                     ft.Container(
                         content=ft.Column([
-                            # Section header
                             ft.Row([
                                 ft.Container(
                                     content=ft.Icon(ft.Icons.CONTACT_PHONE_OUTLINED, color="#f59e0b", size=18),
@@ -496,7 +498,6 @@ class GroupDialogs:
                         ft.Divider(color="#e2e8f0", height=1),
                         ft.Container(height=16),
                         ft.Row([
-                            # Cancel button
                             ft.Container(
                                 content=ft.TextButton(
                                     content=ft.Row([
@@ -570,7 +571,6 @@ class GroupDialogs:
             actions_padding=ft.padding.only(left=24, right=24, bottom=24, top=0),
         )
 
-        # Hide error container initially
         error_container.visible = False
 
         return edit_dialog
@@ -581,23 +581,22 @@ class GroupDialogs:
         
         def delete_group(e):
             try:
-                # Read current data
-                with open("data/groups.json", "r", encoding="utf-8") as f:
+                data_dir = ManageJSON.get_appdata_path() / "data"
+                data_dir.mkdir(parents=True, exist_ok=True)
+                groups_file = data_dir / "groups.json"
+                
+                with open(groups_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 
-                # Remove the group
                 groups = data.get("groups", [])
                 groups = [g for g in groups if g["name"] != group["name"]]
                 data["groups"] = groups
                 
-                # Save updated data
-                with open("data/groups.json", "w", encoding="utf-8") as f:
+                with open(groups_file, "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False, indent=2)
                 
-                # Close dialog and refresh
                 page.close(delete_dialog)
                 
-                # Show success message
                 on_success_callback("הקבוצה נמחקה בהצלחה")
                 
             except Exception as ex:

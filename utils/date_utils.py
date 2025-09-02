@@ -1,6 +1,5 @@
 from datetime import datetime
 
-
 class DateUtils:
     """Utility class for date operations"""
     
@@ -16,11 +15,9 @@ class DateUtils:
             return ""
         
         try:
-            # Try to parse and reformat
             date_obj = datetime.strptime(date_string, "%d/%m/%Y")
             return date_obj.strftime("%d/%m/%Y")
         except ValueError:
-            # Return as-is if parsing fails
             return date_string
     
     @staticmethod

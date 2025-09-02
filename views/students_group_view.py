@@ -14,11 +14,9 @@ class StudentsGroupView:
 
     def render(self):
         """Render the students list view"""
-        # Header
         header = self._create_header()
         self.parent.layout.controls.append(header)
         
-        # Load students
         students = self.data_manager.get_students_by_group(self.group_name)
         
         if not students:
@@ -26,7 +24,6 @@ class StudentsGroupView:
         else:
             self._render_students_grid(students)
         
-        # Action buttons
         actions = self._create_action_buttons()
         self.parent.layout.controls.append(actions)
         
@@ -73,7 +70,6 @@ class StudentsGroupView:
 
     def _render_students_grid(self, students):
         """Render students in a responsive grid"""
-        # Students count
         count_text = ft.Container(
             content=ft.Text(
                 f"{len(students)} תלמידות",
@@ -84,7 +80,6 @@ class StudentsGroupView:
         )
         self.parent.layout.controls.append(count_text)
         
-        # Create responsive grid
         students_grid = ft.Container(
             content=ft.Column([
                 ft.ResponsiveRow([
@@ -106,7 +101,6 @@ class StudentsGroupView:
             if all_students:
                 for student in all_students:
                     if isinstance(student, dict) and student.get('id') == student_id:
-                        # Get student groups using helper function
                         student_groups = self._get_student_groups(student)
                         return len(student_groups) > 1
             return False
@@ -225,9 +219,7 @@ class StudentsGroupView:
         
         name_row = ft.Row(name_controls, spacing=8)
         
-        # Card content
         card_content = ft.Column([
-            # Header
             ft.Row([
                 avatar,
                 ft.Column([
@@ -244,10 +236,8 @@ class StudentsGroupView:
                 ], spacing=2, expand=True)
             ], spacing=12),
             
-            # Contact info
             self._create_contact_info(student),
             
-            # Action buttons
             self._create_card_actions(student)
         ], spacing=12)
         

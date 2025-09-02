@@ -72,7 +72,6 @@ class StudentsTable:
         """Create a table row for a student"""
         row_color =  ft.Colors.WHITE
         student_id = student.get("id") 
-        # Payment status styling
         payment_status = student.get("payment_status", "")
         amount = self.calculate_total_paid_advanced(student.get("payments", []))
         payment_color, payment_bg, payment_icon, display_text = self._get_payment_style(
@@ -273,12 +272,10 @@ class StudentsTable:
                 amount_str = payment.get('amount', '0')
                 
                 try:
-                    # Handle different formats: "100", "100.50", "100,50"
                     clean_amount = str(amount_str).replace(',', '.')
                     amount = float(clean_amount)
                     total_paid += amount
                 except (ValueError, TypeError):
-                    # Skip invalid amounts
                     continue
         
         return total_paid

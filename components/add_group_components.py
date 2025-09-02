@@ -111,7 +111,6 @@ class AddGroupComponents:
     def show_success_dialog(page, on_close_callback=None):
         """Show compact success dialog with auto-close - FIXED VERSION"""
         
-        # יצירת האייקון עם אנימציה
         success_icon = ft.Container(
             content=ft.Icon(
                 ft.Icons.CHECK_CIRCLE_ROUNDED,

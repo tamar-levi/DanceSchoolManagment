@@ -1,6 +1,4 @@
 import flet as ft
-from components.modern_card import ModernCard
-from components.clean_button import CleanButton
 from components.modern_dialog import ModernDialog
 from datetime import datetime
 
@@ -96,7 +94,7 @@ class AddPaymentView:
                     weight=ft.FontWeight.W_600,
                     color="#1e293b"
                 ),
-                ft.Container(height=8),  # Spacer
+                ft.Container(height=8),
                 *form_fields.values()
             ], spacing=20),
             bgcolor="#ffffff",
@@ -200,7 +198,7 @@ class AddPaymentView:
             text_style=ft.TextStyle(size=15, color="#1e293b"),
             label_style=ft.TextStyle(size=14, color="#64748b"),
             hint_style=ft.TextStyle(size=14, color="#94a3b8"),
-            visible=False,  # Initially hidden
+            visible=False,
             on_change=lambda e: self._handle_field_change('check_number', e.control.value)
         )
         

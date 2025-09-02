@@ -22,10 +22,8 @@ class ValidationUtils:
         if not phone:
             return False, "מספר טלפון נדרש"
         
-        # Remove spaces and dashes
         clean_phone = phone.replace(" ", "").replace("-", "")
         
-        # Check if it's all digits and reasonable length
         if not clean_phone.isdigit() or len(clean_phone) < 9 or len(clean_phone) > 11:
             return False, "מספר טלפון לא תקין"
         

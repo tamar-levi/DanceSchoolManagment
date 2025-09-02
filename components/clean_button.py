@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class CleanButton:
     """Clean, minimal button factory"""
     
@@ -20,7 +19,7 @@ class CleanButton:
                 on_click=on_click,
                 ink=True
             )
-        else:  # outlined variant
+        else:  
             return ft.Container(
                 content=ft.Row([
                     ft.Icon(icon, size=16, color=color),

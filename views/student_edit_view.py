@@ -1,9 +1,6 @@
 import flet as ft
-from components.modern_card import ModernCard
-from components.clean_button import CleanButton
 from components.modern_dialog import ModernDialog
 from utils.validation import ValidationUtils
-from utils.date_utils import DateUtils
 from utils.payment_utils import PaymentCalculator
 
 
@@ -216,7 +213,6 @@ class StudentEditView:
             suffix="📅"
         )
         
-        # Display group as read-only text instead of editable field
         group_display = ft.Container(
             content=ft.Column([
                 ft.Text(
@@ -243,7 +239,6 @@ class StudentEditView:
             ], spacing=8)
         )
         
-        # Payment status display (read-only)
         payment_status_display = self._create_payment_status_display()
         
         self.has_sister_checkbox = ft.Checkbox(
@@ -253,14 +248,12 @@ class StudentEditView:
         )
         
         return ft.Column([
-            # שורה ראשונה: שם מלא
             ft.Row([
                 ft.Container(
                     content=self.name_field,
                     expand=True
                 )
             ]),
-            # שורה שנייה: טלפון ותאריך הצטרפות
             ft.Row([
                 ft.Container(
                     content=self.phone_field,
@@ -272,7 +265,6 @@ class StudentEditView:
                     expand=1
                 )
             ]),
-            # שורה שלישית: סטטוס תשלום וקבוצה
             ft.Row([
                 ft.Container(
                     content=payment_status_display,
@@ -284,7 +276,6 @@ class StudentEditView:
                     expand=1
                 )
             ]),
-            # שורה רביעית: צ'קבוקס אחות
             ft.Row([
                 ft.Container(
                     content=self.has_sister_checkbox,
@@ -325,7 +316,6 @@ class StudentEditView:
             content_padding=ft.padding.symmetric(horizontal=16, vertical=16),
             cursor_color="#3b82f6",
             selection_color=ft.Colors.with_opacity(0.2, "#3b82f6"),
-            # Add hover effect
             on_focus=self._on_field_focus,
             on_blur=self._on_field_blur
         )
@@ -365,9 +355,8 @@ class StudentEditView:
                     )
                 ),
                 
-                ft.Container(width=16),  # Spacer
+                ft.Container(width=16), 
                 
-                # Cancel button - clean style
                 ft.OutlinedButton(
                     content=ft.Row([
                         ft.Icon(ft.Icons.CLOSE_ROUNDED, size=20, color="#64748b"),
@@ -452,7 +441,6 @@ class StudentEditView:
             "join_date": self.join_date_field.value.strip() if self.join_date_field.value else ""
         }
         
-        # הסרת payment_status מהוולידציה כי הוא לא ניתן לעריכה
         is_valid, empty_fields = ValidationUtils.validate_required_fields(form_data)
         if not is_valid:
             self._set_loading_state(False)
@@ -482,7 +470,7 @@ class StudentEditView:
             "name": form_data["name"],
             "phone": form_data["phone"],
             "groups": self.student.get('groups', []),
-            "payment_status": self.student.get('payment_status', ''),  # שמירת הסטטוס המקורי
+            "payment_status": self.student.get('payment_status', ''),  
             "join_date": date_result,  
             "payments": self.student.get('payments', []),
             "has_sister": self.has_sister_checkbox.value
@@ -523,7 +511,7 @@ class StudentEditView:
 
     def _clear_field_errors(self):
         """Clear all field errors"""
-        fields = [self.name_field, self.phone_field, self.join_date_field]  # הסרת payment_field
+        fields = [self.name_field, self.phone_field, self.join_date_field]
         
         for field in fields:
             if field:

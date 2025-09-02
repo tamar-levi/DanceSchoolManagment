@@ -1,7 +1,5 @@
 import flet as ft
-from typing import List, Dict, Any
 from components.stats_cards import StatsCards
-from components.search_bar import SearchBar
 from components.students_table import StudentsTable
 from components.no_results_dialog import NoResultsDialog
 
@@ -14,7 +12,6 @@ class StudentsListView:
         self.page = parent.page
         self.data_manager = parent.data_manager
         
-        # Components
         self.students_table = StudentsTable()
         self.search_field = None  
         self.stats_container = None 
@@ -166,7 +163,6 @@ class StudentsListView:
         else:
             self.filtered_students = self.data_manager.filter_students(self.current_students, query)
             
-            # Show no results dialog if no matches
             if not self.filtered_students:
                 NoResultsDialog.show(self.page)
         
@@ -177,7 +173,6 @@ class StudentsListView:
         self.load_data()
         self.update_components()
         
-        # Show success message
         self.page.snack_bar = ft.SnackBar(
             content=ft.Text("הנתונים רוענו בהצלחה", rtl=True),
             bgcolor=ft.Colors.GREEN_600
@@ -196,18 +191,14 @@ class StudentsListView:
     
     def update_components(self):
         """Update only the dynamic components without rebuilding everything"""
-        # Update stats
         if self.stats_container:
             stats = self.data_manager.get_students_stats(self.filtered_students)
             self.stats_container.content = StatsCards.create_stats_row(stats)
             self.stats_container.update()
         
-        # Update table
         if self.table_container:
-            # Remove old table from parent
             for i, control in enumerate(self.parent.layout.controls):
                 if control == self.table_container:
-                    # Create new table
                     new_table = self.create_table_section()
                     self.parent.layout.controls[i] = new_table
                     self.table_container = new_table

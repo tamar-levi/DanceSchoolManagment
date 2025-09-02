@@ -2,7 +2,6 @@ import flet as ft
 from components.modern_card import ModernCard
 from components.clean_button import CleanButton
 
-
 class AddStudentView:
     """View for add student form"""
     
@@ -12,15 +11,12 @@ class AddStudentView:
 
     def render(self):
         """Render the add student form"""
-        # Header Card
         header_card = self._create_header_card()
         self.parent.layout.controls.append(header_card)
         
-        # Form Card
         form_card = self._create_form_card()
         self.parent.layout.controls.append(form_card)
         
-        # Action Buttons
         actions_card = self._create_actions_card()
         self.parent.layout.controls.append(actions_card)
         
@@ -79,13 +75,10 @@ class AddStudentView:
                     ),
                     ft.Divider(height=1, color=ft.Colors.GREY_200),
                     
-                    # Personal Info Section
                     self._create_personal_info_section(),
                     
-                    # Group & Payment Section
                     self._create_group_payment_section(),
                     
-                    # Info box
                     self._create_info_box()
                 ], spacing=24),
                 padding=ft.padding.all(24)

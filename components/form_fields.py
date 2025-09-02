@@ -1,7 +1,6 @@
 import flet as ft
 from datetime import datetime
 
-
 class FormFields:
     """Factory for creating form fields"""
     

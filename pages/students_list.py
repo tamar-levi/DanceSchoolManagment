@@ -2,7 +2,6 @@ import flet as ft
 from utils.students_data_manager import StudentsDataManager
 from views.students_list_view import StudentsListView
 
-
 class StudentsListPage:
     """Main students list page controller"""
     
@@ -10,10 +9,8 @@ class StudentsListPage:
         self.page = page
         self.navigation_callback = navigation_callback
         
-        # Data manager
         self.data_manager = StudentsDataManager()
         
-        # Main layout
         self.layout = ft.Column(
             controls=[],
             spacing=0,
@@ -21,10 +18,8 @@ class StudentsListPage:
             scroll=ft.ScrollMode.AUTO
         )
         
-        # View
         self.view = StudentsListView(self)
         
-        # Initialize
         self.initialize()
     
     def initialize(self):

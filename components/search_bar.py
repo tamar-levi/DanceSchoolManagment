@@ -1,6 +1,5 @@
 import flet as ft
 
-
 class SearchBar:
     """Search bar component"""
     

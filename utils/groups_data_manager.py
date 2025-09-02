@@ -1,17 +1,13 @@
 import json
-import os
-
+from utils.manage_json import ManageJSON  
 
 class GroupsDataManager:
     """Manager for groups data operations"""
     
     def __init__(self):
-        self.groups_file = self._get_file_path('groups.json')
-    
-    def _get_file_path(self, filename):
-        """Get absolute path to data file"""
-        base_dir = os.path.dirname(os.path.dirname(__file__))
-        return os.path.abspath(os.path.join(base_dir, 'data', filename))
+        data_dir = ManageJSON.get_appdata_path() / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        self.groups_file = data_dir / "groups.json"
     
     def load_groups(self):
         """Load groups from JSON file"""
@@ -26,7 +22,6 @@ class GroupsDataManager:
         try:
             data = self.load_groups()
             
-            # Generate new ID - תיקון הבעיה כאן
             existing_ids = []
             for group in data.get("groups", []):
                 group_id = group.get("id")
@@ -74,6 +69,3 @@ class GroupsDataManager:
                 return False, "נא למלא את כל השדות החובה"
             
         return True, ""
-
-
-

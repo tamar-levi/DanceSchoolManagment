@@ -4,13 +4,14 @@ from pages.students_page import StudentsPage
 from pages.add_group_page import AddGroupPage
 from components.groups_dialogs import GroupDialogs
 from utils.payment_utils import PaymentCalculator
+from utils.manage_json import ManageJSON
 
 class GroupsPage:
     def __init__(self, page, navigation_callback):
         self.page = page
         self.navigation_callback = navigation_callback
         self.add_group_page = None
-        self.payment_calculator = PaymentCalculator()  # הוספת מחשבון התשלומים
+        self.payment_calculator = PaymentCalculator() 
         
         self.groups_container = ft.Column(
             alignment=ft.MainAxisAlignment.START,
@@ -43,12 +44,11 @@ class GroupsPage:
         try:
             group_id = group.get("id")
             start_date = group.get("group_start_date")
-            end_date = group.get("group_end_date")  # תמיד יהיה תאריך סיום
+            end_date = group.get("group_end_date") 
             
             if not group_id or not start_date or not end_date:
-                return f"₪{group.get('price', '0')}"  # fallback למחיר החודשי
+                return f"₪{group.get('price', '0')}"  
             
-            # שימוש בפונקציה calculate_payment_for_period עם תאריך סיום
             payment_result = self.payment_calculator.calculate_payment_for_period(
                 group_id, start_date, end_date
             )
@@ -57,7 +57,6 @@ class GroupsPage:
                 total_price = payment_result["total_payment"]
                 return f"₪{total_price:.0f}"
             else:
-                # אם יש שגיאה, חזור למחיר החודשי
                 return f"₪{group.get('price', '0')}"
                 
         except Exception as e:
@@ -129,8 +128,6 @@ class GroupsPage:
 
     def create_group_card(self, group):
         """Create a modern group card with edit and delete options"""
-        # חישוב מחיר הקורס המלא
-        # course_total_price = self.get_course_total_price(group)
         
         return ft.Container(
             content=ft.Column([
@@ -171,16 +168,11 @@ class GroupsPage:
                     ], spacing=4, expand=True),
                     ft.Column([
                         ft.Text(
-                            # course_total_price,  # מחיר הקורס המלא במקום המחיר החודשי
                             size=16,
                             weight=ft.FontWeight.BOLD,
                             color="#48bb78"
                         ),
-                        # ft.Text(
-                        #     "מחיר קורס מלא",  # הבהרה שזה מחיר הקורס המלא
-                        #     size=10,
-                        #     color="#a0aec0"
-                        # ),
+                      
                         ft.Text(
                             f"התחלה: {group.get('group_start_date', 'לא צוין')}",
                             size=12,
@@ -259,7 +251,10 @@ class GroupsPage:
     def build_group_buttons(self):
         self.groups_container.controls.clear()
         try:
-            with open("data/groups.json", encoding="utf-8") as f:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            groups_file = data_dir / "groups.json"
+            
+            with open(groups_file, encoding="utf-8") as f:
                 data = json.load(f)
                 groups = data.get("groups", [])
         except Exception as e:

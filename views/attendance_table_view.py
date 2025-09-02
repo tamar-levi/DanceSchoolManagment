@@ -1,8 +1,8 @@
 import json
-import os
 import flet as ft
 from typing import Dict, Any
 from utils.attendance_utils import AttendanceUtils
+from utils.manage_json import ManageJSON
 
 class AttendanceTableView:
     def __init__(self, page: ft.Page, navigation_handler=None, group: Dict[str, Any] = None, parent_page=None):
@@ -14,7 +14,6 @@ class AttendanceTableView:
         self.students = []
         self.table_container = None 
         
-        # Load data
         self.load_data()
 
     def load_data(self):
@@ -22,8 +21,11 @@ class AttendanceTableView:
         self.attendance_data = AttendanceUtils.load_attendance_file(self.group.get('id', ''))
         
         try:
-            if os.path.exists("data/students.json"):
-                with open("data/students.json", "r", encoding="utf-8") as f:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            students_file = data_dir / "students.json"
+            
+            if students_file.exists():
+                with open(students_file, "r", encoding="utf-8") as f:
                     students_data = json.load(f)
                     self.students = []
                     for s in students_data.get("students", []):
@@ -195,7 +197,6 @@ class AttendanceTableView:
             self.attendance_data[date][str(student_id)] = new_status
             self.save_attendance()
             
-            # עדכון האייקון מיידית
             if new_status:
                 new_icon = ft.Icon(ft.Icons.CHECK_CIRCLE, size=22, color=ft.Colors.GREEN_600)
                 e.control.tooltip = "נוכח - לחץ לשינוי"
@@ -206,7 +207,6 @@ class AttendanceTableView:
             e.control.content = new_icon
             e.control.update()
             
-            # עדכון הטבלה המלאה ביחד עם ההודעות
             self.update_table_instantly()
             self.show_success_snackbar(f"נוכחות עודכנה ל{'נוכח' if new_status else 'נעדר'}")
         
@@ -406,9 +406,7 @@ class AttendanceTableView:
         def on_cancel(e):
             self.page.close(dlg)
 
-        # ✅ תוכן הדיאלוג עם הודעת השגיאה
         content = ft.Column([
-            # אייקון ראשי
             ft.Container(
                 content=ft.Icon(ft.Icons.EDIT_CALENDAR_OUTLINED, size=40, color=ft.Colors.BLUE_500),
                 bgcolor=ft.Colors.BLUE_50,
@@ -418,16 +416,13 @@ class AttendanceTableView:
             
             ft.Container(height=20),
             
-            # הוראות
             ft.Text("ערוך את התאריך:", rtl=True, size=14, color=ft.Colors.GREY_700, weight=ft.FontWeight.W_500),
             ft.Text("(פורמט: dd/mm/yyyy)", rtl=True, size=12, color=ft.Colors.GREY_500, italic=True),
             
             ft.Container(height=12),
             
-            # שדה הקלט
             date_input,
             
-            # ✅ הודעת השגיאה
             error_message,
             
         ], horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True)
@@ -471,11 +466,7 @@ class AttendanceTableView:
                     del self.attendance_data[date]
                     self.save_attendance()
                     self.page.close(dlg)
-                    
-                    # עדכון מיידי של הטבלה
                     self.update_table_instantly()
-                    
-                    # הודעת הצלחה
                     self.show_success_snackbar("התאריך נמחק בהצלחה!")
             except Exception as ex:
                 print(f"Error in delete_date: {ex}")

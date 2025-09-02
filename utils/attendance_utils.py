@@ -1,7 +1,7 @@
 import json
-import os
 from typing import Dict, List, Any
 import datetime
+from utils.manage_json import ManageJSON
 
 class AttendanceUtils:
     """Utility functions for attendance management"""
@@ -12,9 +12,8 @@ class AttendanceUtils:
         if not date_str or not date_str.strip():
             return False
         
-        # Check if it's a reasonable date format
         date_str = date_str.strip()
-        if len(date_str) < 8:  # Minimum for DD/MM/YY
+        if len(date_str) < 8: 
             return False
             
         return True
@@ -40,14 +39,12 @@ class AttendanceUtils:
                     date_obj = None
                     clean_date = AttendanceUtils.clean_date_string(date_str)
                     
-                    # Try DD/MM/YYYY
                     if '/' in clean_date and len(clean_date.split('/')) == 3:
                         parts = clean_date.split('/')
                         if len(parts[0]) <= 2 and len(parts[1]) <= 2 and len(parts[2]) == 4:
                             day, month, year = parts
                             date_obj = datetime.datetime(int(year), int(month), int(day))
                     
-                    # Try DD-MM-YYYY
                     elif '-' in clean_date and len(clean_date.split('-')) == 3:
                         parts = clean_date.split('-')
                         if len(parts[0]) <= 2 and len(parts[1]) <= 2 and len(parts[2]) == 4:
@@ -57,17 +54,14 @@ class AttendanceUtils:
                     if date_obj:
                         date_objects.append((date_obj, clean_date))
                     else:
-                        # If parsing failed, put at end
                         date_objects.append((datetime.datetime(1900, 1, 1), clean_date))
                         
                 except Exception as e:
                     print(f"Error parsing date {date_str}: {e}")
                     date_objects.append((datetime.datetime(1900, 1, 1), clean_date))
             
-            # Sort by date (newest first)
             date_objects.sort(key=lambda x: x[0], reverse=True)
             
-            # Return only the date strings
             return [date_str for _, date_str in date_objects]
             
         except Exception as e:
@@ -138,13 +132,13 @@ class AttendanceUtils:
     def save_attendance_file(group_id: str, attendance_data: Dict[str, Any]) -> bool:
         """Save attendance data to file"""
         try:
-            os.makedirs("attendances", exist_ok=True)
-            path = f"attendances/attendance_{group_id}.json"
+            attendances_dir = ManageJSON.get_appdata_path() / "attendances"
+            attendances_dir.mkdir(parents=True, exist_ok=True)
+            attendance_file = attendances_dir / f"attendance_{group_id}.json"
             
-            # Clean data before saving
             cleaned_data = AttendanceUtils.clean_attendance_data(attendance_data)
             
-            with open(path, "w", encoding="utf-8") as f:
+            with open(attendance_file, "w", encoding="utf-8") as f:
                 json.dump(cleaned_data, f, ensure_ascii=False, indent=2)
             
             return True
@@ -157,12 +151,13 @@ class AttendanceUtils:
     def load_attendance_file(group_id: str) -> Dict[str, Any]:
         """Load attendance data from file"""
         try:
-            path = f"attendances/attendance_{group_id}.json"
-            if os.path.exists(path):
-                with open(path, "r", encoding="utf-8") as f:
+            attendances_dir = ManageJSON.get_appdata_path() / "attendances"
+            attendance_file = attendances_dir / f"attendance_{group_id}.json"
+            
+            if attendance_file.exists():
+                with open(attendance_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                 
-                # Clean data after loading
                 return AttendanceUtils.clean_attendance_data(data)
             
             return {}
@@ -175,7 +170,6 @@ class AttendanceUtils:
     def get_attendance_statistics(attendance_data: Dict[str, Any], students: List[Dict]) -> Dict[str, Any]:
         """Get comprehensive attendance statistics"""
         try:
-            # Clean data first
             cleaned_data = AttendanceUtils.clean_attendance_data(attendance_data)
             valid_dates = [d for d in cleaned_data.keys() if AttendanceUtils.validate_date(d)]
             
@@ -197,7 +191,6 @@ class AttendanceUtils:
             total_absent = 0
             student_stats = {}
             
-            # Initialize student stats
             for student in students:
                 student_stats[student["id"]] = {
                     'name': student["name"],
@@ -206,7 +199,6 @@ class AttendanceUtils:
                     'attendance_rate': 0.0
                 }
             
-            # Calculate stats
             for date in valid_dates:
                 date_data = cleaned_data.get(date, {})
                 for student in students:
@@ -220,12 +212,10 @@ class AttendanceUtils:
                         total_absent += 1
                         student_stats[student["id"]]['absent'] += 1
             
-            # Calculate rates
             total_possible = total_classes * total_students
             attendance_rate = (total_present / total_possible * 100) if total_possible > 0 else 0
             absence_rate = (total_absent / total_possible * 100) if total_possible > 0 else 0
             
-            # Calculate individual student rates
             for student_id in student_stats:
                 present = student_stats[student_id]['present']
                 student_stats[student_id]['attendance_rate'] = (present / total_classes * 100) if total_classes > 0 else 0

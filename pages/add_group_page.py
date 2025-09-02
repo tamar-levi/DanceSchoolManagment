@@ -303,11 +303,9 @@ class AddGroupPage:
 
     def _handle_save(self, e):
         """Handle save button click"""
-        # עדכן form_state
         for key, field in self.form_fields.items():
             self.form_state[key] = field.value or ""
         
-        # בדיקה נוספת לשם קבוצה לפני הוולידציה הכללית
         group_name = self.form_state['name'].strip()
         if group_name and self._check_group_name_exists(group_name):
             self.validation_errors['name'] = "קבוצה בשם זה כבר קיימת במערכת"
@@ -315,12 +313,10 @@ class AddGroupPage:
             AddGroupComponents.show_error_dialog(self.page, "קבוצה בשם זה כבר קיימת במערכת")
             return
         
-        # ולידציה
         if not self._validate_all_fields():
             AddGroupComponents.show_error_dialog(self.page, "יש לתקן את השגיאות בטופס")
             return
         
-        # הכן נתונים
         price_value = self.form_state['price'].strip()
         try:
             price_int = int(price_value) if price_value and price_value.isdigit() else 0
@@ -340,13 +336,11 @@ class AddGroupPage:
             "teacher_email": self.form_state['email'].strip(),
         }
         
-        # ולידציה עם data manager
         is_valid, error_message = self.data_manager.validate_group_data(group_data)
         if not is_valid:
             AddGroupComponents.show_error_dialog(self.page, f"שגיאה בוולידציה: {error_message}")
             return
         
-        # שמירה
         success, message = self.data_manager.save_group(group_data)
         
         if success:
@@ -387,7 +381,6 @@ class AddGroupPage:
     def get_view(self):
         return self.main_layout
 
-    # Legacy methods for compatibility
     def save_group(self, e):
         self._handle_save(e)
 
