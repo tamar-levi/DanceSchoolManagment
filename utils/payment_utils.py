@@ -1,6 +1,5 @@
 import json
 from datetime import datetime, timedelta
-from utils.date_utils import DateUtils
 from utils.manage_json import ManageJSON  
 
 class PaymentCalculator:
@@ -203,6 +202,7 @@ class PaymentCalculator:
         except Exception as e:
             print(f"DEBUG: Error creating discount periods: {e}")
             return []
+
 
 
     def calculate_period_payment_with_discount_rules(self, student_id, period):
@@ -903,7 +903,7 @@ class PaymentCalculator:
                         "student_name": student.get("name", ""),
                         "groups": student.get("groups", []),
                         "has_sister": student.get("has_sister", False),
-                        "join_date": DateUtils.get_join_date_by_id(student.get("id")),
+                        "join_date": student.get("join_date", ""),
                         "payment_status": student.get("payment_status", ""),
                         "monthly_price": price_calc["final_monthly_price"],
                         "num_groups": price_calc["num_groups"],

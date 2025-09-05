@@ -1,6 +1,5 @@
 import json
 from typing import List, Dict, Any
-from utils.date_utils import DateUtils
 from utils.manage_json import ManageJSON
 
 class StudentsDataManager:
@@ -263,7 +262,7 @@ class StudentsDataManager:
                 )
                 
                 student_groups = student.get("groups", [])
-                join_date = DateUtils.get_join_date_by_id(student.get("id"))
+                join_date = student.get("join_date", "")
                 
                 total_owed = 0
                 for group_name in student_groups:
@@ -290,7 +289,6 @@ class StudentsDataManager:
                 break
         
         return self.save_students(students)
-
 
 
     def _get_groups(self):

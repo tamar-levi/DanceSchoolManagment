@@ -4,25 +4,67 @@ from components.modern_dialog import ModernDialog
 from utils.manage_json import ManageJSON
 from utils.validation import ValidationUtils
 from utils.payment_utils import PaymentCalculator
-from utils.date_utils import DateUtils
 
 class StudentEditView:
     """View for editing student information with modern React-like styling"""
     
-    def __init__(self, parent, student):
+    def __init__(self, parent, student, group_id=None):
         self.parent = parent
         self.page = parent.page
         self.student = student
         self.dialog = ModernDialog(self.page)
+        self.group_id = group_id
         
         self.name_field = None
         self.phone_field = None
         self.payment_field = None
         self.join_date_field = None
-        self.has_sister_checkbox= None
+        self.has_sister_checkbox = None
 
-    def _get_join_date(self):
-        return DateUtils.get_join_date_by_id(self.student.get("id"))
+    def _get_join_date_from_joining_dates(self):
+        """Get join date from joining_dates.json file for the specific group"""
+        try:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            joining_dates_file = data_dir / "joining_dates.json"
+            
+            if not joining_dates_file.exists():
+                return None
+                
+            with open(joining_dates_file, "r", encoding="utf-8") as f:
+                joining_dates = json.load(f)
+            
+            if self.group_id and self.group_id in joining_dates:
+                for student_entry in joining_dates[self.group_id]:
+                    if student_entry.get("student_id") == self.student.get("id"):
+                        return student_entry.get("join_date")
+            
+            student_groups = self.student.get('groups', [])
+            earliest_date = None
+            
+            for group_name in student_groups:
+                for gid, students_list in joining_dates.items():
+                    for student_entry in students_list:
+                        if student_entry.get("student_id") == self.student.get("id"):
+                            join_date = student_entry.get("join_date")
+                            if join_date:
+                                if not earliest_date:
+                                    earliest_date = join_date
+                                else:
+                                    from datetime import datetime
+                                    try:
+                                        current_date = datetime.strptime(join_date, "%d/%m/%Y")
+                                        earliest_date_obj = datetime.strptime(earliest_date, "%d/%m/%Y")
+                                        if current_date < earliest_date_obj:
+                                            earliest_date = join_date
+                                    except:
+                                        pass
+            
+            return earliest_date
+            
+        except Exception as e:
+            print(f"Error reading join date from joining_dates.json: {e}")
+            return None
+
 
     def render(self):
         """Render the edit form with modern styling"""
@@ -163,7 +205,6 @@ class StudentEditView:
         else:
             return payment_status, ft.Colors.GREY_600
 
-
     def _create_payment_status_display(self):
         """Create payment status display (read-only)"""
         display_status = self._get_payment_display_status()
@@ -212,7 +253,7 @@ class StudentEditView:
         
         self.join_date_field = self._create_modern_text_field(
             label="תאריך הצטרפות",
-            value=self._get_join_date() or self.student['join_date'],
+            value = self.student.get('join_date', ''),
             icon=ft.Icons.CALENDAR_TODAY_OUTLINED,
             hint="dd/mm/yyyy או dd-mm-yyyy או dd.mm.yyyy",
         )
@@ -287,7 +328,6 @@ class StudentEditView:
                 )
             ])
         ], spacing=20)
-
 
     def _create_modern_text_field(self, label, value, icon, hint, keyboard_type=None, suffix=None):
         """Create a modern text field component (React-like styling)"""
@@ -435,6 +475,7 @@ class StudentEditView:
         return False, "פורמט תאריך לא תקין. דוגמאות תקינות: 25/12/2023, 2023/12/25, 25-12-2023"
 
     def _update_joining_dates(self, student_id: str, name: str, join_date: str):
+        """Update joining_dates.json with the new date only for the current group"""
         try:
             data_dir = ManageJSON.get_appdata_path() / "data"
             joining_dates_file = data_dir / "joining_dates.json"
@@ -443,82 +484,112 @@ class StudentEditView:
                 with open(joining_dates_file, "r", encoding="utf-8") as f:
                     joining_dates = json.load(f)
             else:
-                joining_dates = {"1": []}
+                joining_dates = {}
 
-            for group in joining_dates.values():
-                for student in group:
-                    if student.get("student_id") == student_id:
-                        student["student_name"] = name
-                        student["join_date"] = join_date
-                        break
+            if not self.group_id:
+                print("No group_id provided, skipping update.")
+                return
+
+            if self.group_id not in joining_dates:
+                joining_dates[self.group_id] = []
+
+            student_exists = False
+            for student in joining_dates[self.group_id]:
+                if student.get("student_id") == student_id:
+                    student["student_name"] = name
+                    student["join_date"] = join_date
+                    student_exists = True
+                    break
+
+            if not student_exists:
+                joining_dates[self.group_id].append({
+                    "student_id": student_id,
+                    "student_name": name,
+                    "join_date": join_date
+                })
 
             with open(joining_dates_file, "w", encoding="utf-8") as f:
                 json.dump(joining_dates, f, ensure_ascii=False, indent=2)
 
+            print(f"Successfully updated joining date for student {student_id} in group {self.group_id}")
+
         except Exception as e:
             print(f"Error updating joining_dates for student {student_id}: {e}")
+
 
     def _save_student(self, e):
         """Save student changes with validation and loading state"""
         self._set_loading_state(True)
-        
+
         form_data = {
             "name": self.name_field.value.strip() if self.name_field.value else "",
             "phone": self.phone_field.value.strip() if self.phone_field.value else "",
             "join_date": self.join_date_field.value.strip() if self.join_date_field.value else ""
         }
-        
+
         is_valid, empty_fields = ValidationUtils.validate_required_fields(form_data)
         if not is_valid:
             self._set_loading_state(False)
             self._show_validation_error("יש למלא את כל השדות הנדרשים", empty_fields)
             return
-        
+
         name_valid, name_error = ValidationUtils.validate_name(form_data["name"])
         if not name_valid:
             self._set_loading_state(False)
             self._show_field_error(self.name_field, name_error)
             return
-        
+
         phone_valid, phone_error = ValidationUtils.validate_phone(form_data["phone"])
         if not phone_valid:
             self._set_loading_state(False)
             self._show_field_error(self.phone_field, phone_error)
             return
-        
+
         date_valid, date_result = self._validate_and_format_date(form_data["join_date"])
         if not date_valid:
             self._set_loading_state(False)
             self._show_field_error(self.join_date_field, date_result)
             return
-        
-        new_data = {
-            "id": self.student.get('id', ''),
-            "name": form_data["name"],
-            "phone": form_data["phone"],
-            "groups": self.student.get('groups', []),
-            "payment_status": self.student.get('payment_status', ''),  
-            "join_date": date_result,  
-            "payments": self.student.get('payments', []),
-            "has_sister": self.has_sister_checkbox.value
-        }
-        
-        success = self.parent.data_manager.update_student(
-            self.student['id'], 
-            new_data
-        )
-        
-        self._set_loading_state(False)
 
-        if success:
-            self._update_joining_dates(
-                student_id=self.student['id'],
-                name=form_data["name"],
-                join_date=date_result
-            )
-            self._show_success_message()
-        else:
-            self.dialog.show_error("שגיאה בשמירת התלמידה")
+        students_file = ManageJSON.get_appdata_path() / "data" / "students.json"
+        students_data = []
+        if students_file.exists():
+            with open(students_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                students_data = data.get("students", [])
+
+        for student in students_data:
+            if isinstance(student, dict) and student.get("id") == self.student["id"]:
+                student["name"] = form_data["name"]
+                student["phone"] = form_data["phone"]
+                student["has_sister"] = self.has_sister_checkbox.value
+                student["payment_status"] = self.student.get("payment_status", "")
+                student["payments"] = self.student.get("payments", [])
+
+                from datetime import datetime
+                old_date_str = student.get("join_date")
+                if old_date_str:
+                    old_dt = datetime.strptime(old_date_str, "%d/%m/%Y")
+                    new_dt = datetime.strptime(date_result, "%d/%m/%Y")
+                    if new_dt <= old_dt:
+                        student["join_date"] = date_result
+                else:
+                    student["join_date"] = date_result
+
+                break
+
+        with open(students_file, "w", encoding="utf-8") as f:
+            json.dump({"students": students_data}, f, ensure_ascii=False, indent=2)
+
+        self._update_joining_dates(
+            student_id=self.student['id'],
+            name=form_data["name"],
+            join_date=date_result
+        )
+
+        self._set_loading_state(False)
+        self._show_success_message()
+
 
 
     def _set_loading_state(self, loading):

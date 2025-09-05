@@ -1,5 +1,4 @@
 from datetime import datetime
-import json
 
 class DateUtils:
     """Utility class for date operations"""
@@ -32,27 +31,3 @@ class DateUtils:
             return True, None
         except ValueError:
             return False, "פורמט תאריך לא תקין (dd/mm/yyyy)"
-        
-    @staticmethod
-    def get_join_date_by_id(student_id: str) -> str | None:
-        try:
-            from utils.manage_json import ManageJSON
-            data_dir = ManageJSON.get_appdata_path() / "data"
-            joining_dates_file = data_dir / "joining_dates.json"
-            
-            if not joining_dates_file.exists():
-                return None
-                
-            with open(joining_dates_file, "r", encoding="utf-8") as f:
-                joining_dates = json.load(f)
-            
-            for group in joining_dates.values():
-                for student in group:
-                    if student.get("student_id") == student_id:
-                        return student.get("join_date")
-            
-            return None
-            
-        except Exception as e:
-            print(f"Error getting join date for student {student_id}: {e}")
-            return None
