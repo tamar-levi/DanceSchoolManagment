@@ -65,6 +65,42 @@ class StudentEditView:
             print(f"Error reading join date from joining_dates.json: {e}")
             return None
 
+    def _get_earliest_join_date_from_joining_dates(self, student_id):
+        """Get the earliest join date for a student from all groups in joining_dates.json"""
+        try:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            joining_dates_file = data_dir / "joining_dates.json"
+            
+            if not joining_dates_file.exists():
+                return None
+                
+            with open(joining_dates_file, "r", encoding="utf-8") as f:
+                joining_dates = json.load(f)
+            
+            earliest_date = None
+            from datetime import datetime
+            
+            for group_id, students_list in joining_dates.items():
+                for student_entry in students_list:
+                    if student_entry.get("student_id") == student_id:
+                        join_date = student_entry.get("join_date")
+                        if join_date:
+                            try:
+                                current_date = datetime.strptime(join_date, "%d/%m/%Y")
+                                if not earliest_date:
+                                    earliest_date = current_date
+                                    earliest_date_str = join_date
+                                elif current_date < earliest_date:
+                                    earliest_date = current_date
+                                    earliest_date_str = join_date
+                            except ValueError:
+                                continue
+            
+            return earliest_date_str if earliest_date else None
+            
+        except Exception as e:
+            print(f"Error getting earliest join date: {e}")
+            return None
 
     def render(self):
         """Render the edit form with modern styling"""
@@ -150,7 +186,6 @@ class StudentEditView:
         """Get the display status for payment based on the logic from students_table.py"""
         payment_status = self.student.get('payment_status', '')
         student_groups = self.student.get('groups', [])
-        join_date = self.student.get('join_date', '')
         student_id = self.student.get('id', '')
         
         payments = self.student.get('payments', [])
@@ -253,7 +288,7 @@ class StudentEditView:
         
         self.join_date_field = self._create_modern_text_field(
             label="תאריך הצטרפות",
-            value = self.student.get('join_date', ''),
+            value=self._get_join_date_from_joining_dates() or '',  
             icon=ft.Icons.CALENDAR_TODAY_OUTLINED,
             hint="dd/mm/yyyy או dd-mm-yyyy או dd.mm.yyyy",
         )
@@ -516,7 +551,6 @@ class StudentEditView:
         except Exception as e:
             print(f"Error updating joining_dates for student {student_id}: {e}")
 
-
     def _save_student(self, e):
         """Save student changes with validation and loading state"""
         self._set_loading_state(True)
@@ -551,6 +585,14 @@ class StudentEditView:
             self._show_field_error(self.join_date_field, date_result)
             return
 
+        self._update_joining_dates(
+            student_id=self.student['id'],
+            name=form_data["name"],
+            join_date=date_result
+        )
+
+        earliest_join_date = self._get_earliest_join_date_from_joining_dates(self.student['id'])
+        
         students_file = ManageJSON.get_appdata_path() / "data" / "students.json"
         students_data = []
         if students_file.exists():
@@ -565,31 +607,18 @@ class StudentEditView:
                 student["has_sister"] = self.has_sister_checkbox.value
                 student["payment_status"] = self.student.get("payment_status", "")
                 student["payments"] = self.student.get("payments", [])
-
-                from datetime import datetime
-                old_date_str = student.get("join_date")
-                if old_date_str:
-                    old_dt = datetime.strptime(old_date_str, "%d/%m/%Y")
-                    new_dt = datetime.strptime(date_result, "%d/%m/%Y")
-                    if new_dt <= old_dt:
-                        student["join_date"] = date_result
+                
+                if earliest_join_date:
+                    student["join_date"] = earliest_join_date
                 else:
                     student["join_date"] = date_result
-
                 break
 
         with open(students_file, "w", encoding="utf-8") as f:
             json.dump({"students": students_data}, f, ensure_ascii=False, indent=2)
 
-        self._update_joining_dates(
-            student_id=self.student['id'],
-            name=form_data["name"],
-            join_date=date_result
-        )
-
         self._set_loading_state(False)
         self._show_success_message()
-
 
 
     def _set_loading_state(self, loading):

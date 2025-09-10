@@ -13,7 +13,6 @@ class PaymentCalculator:
         self.pricing_config_file = data_dir / "pricing.json"
         self.load_pricing_config()
 
-    
     def load_groups(self):
         try:
             if self.groups_file_path.exists():
@@ -134,7 +133,7 @@ class PaymentCalculator:
 
     
     def create_discount_periods_for_student(self, student_id, end_date):
-        """Create discount periods for student based on group join dates"""
+        """Create discount periods for student based on group join dates - each group calculated separately until end of second group join month"""
         try:
             groups_with_dates = self.get_student_groups_with_join_dates(student_id)
             if not groups_with_dates:
@@ -155,6 +154,10 @@ class PaymentCalculator:
                 })
             else:
                 first_group = groups_with_dates[0]
+                second_group = groups_with_dates[1]
+                
+                first_group_date = datetime.strptime(first_group["join_date"], "%d/%m/%Y")
+                second_group_date = datetime.strptime(second_group["join_date"], "%d/%m/%Y")
                 
                 same_day_multiple = self.check_if_same_day_multiple_groups(groups_with_dates)
                 
@@ -167,42 +170,126 @@ class PaymentCalculator:
                         "reason": "הצטרפות לכמה קבוצות באותו יום"
                     })
                 else:
-                    second_group = groups_with_dates[1]
-                    second_group_date = datetime.strptime(second_group["join_date"], "%d/%m/%Y")
+                    second_group_id = self.get_group_id_by_name(second_group["group_name"])
                     end_of_second_group_month = self.get_end_of_month(second_group_date)
                     
-                    period1_end = (second_group_date - timedelta(days=1)).strftime("%d/%m/%Y")
-                    periods.append({
-                        "start_date": first_group["join_date"],
-                        "end_date": period1_end,
-                        "active_groups": [first_group],
-                        "discount_applies": False,
-                        "reason": "קבוצה ראשונה לבד"
-                    })
+                    second_group_meetings = self.count_meetings_in_date_range(
+                        second_group_id, second_group_date, end_of_second_group_month
+                    )
                     
-                    periods.append({
-                        "start_date": second_group["join_date"],
-                        "end_date": end_of_second_group_month.strftime("%d/%m/%Y"),
-                        "active_groups": [second_group],  
-                        "discount_applies": False,
-                        "reason": "חודש ראשון של קבוצה שנייה - רק הקבוצה השנייה"
-                    })
+                    starts_at_month_beginning = second_group_date.day <= 5
                     
-                    if end_of_second_group_month < end_date:
-                        discount_start_date = end_of_second_group_month + timedelta(days=1)
+                    if second_group_meetings >= 3 or starts_at_month_beginning:
+                        start_of_second_month = second_group_date.replace(day=1)
+                        
+                        if first_group_date < start_of_second_month:
+                            end_of_period1 = (start_of_second_month - timedelta(days=1)).strftime("%d/%m/%Y")
+                            periods.append({
+                                "start_date": first_group["join_date"],
+                                "end_date": end_of_period1,
+                                "active_groups": [first_group],
+                                "discount_applies": False,
+                                "reason": "קבוצה ראשונה לבד עד תחילת החודש של ההצטרפות לקבוצה השנייה"
+                            })
+                        
                         periods.append({
-                            "start_date": discount_start_date.strftime("%d/%m/%Y"),
+                            "start_date": start_of_second_month.strftime("%d/%m/%Y"),
                             "end_date": end_date.strftime("%d/%m/%Y"),
-                            "active_groups": groups_with_dates,
+                            "active_groups": groups_with_dates[:2],  
                             "discount_applies": True,
-                            "reason": "מתחילת החודש שאחרי הצטרפות לקבוצה שנייה"
+                            "reason": "שתי הקבוצות יחד עם הנחה - מתחילת החודש של ההצטרפות לקבוצה השנייה (מחיר מלא)"
                         })
+                    else:
+                        end_of_second_group_month = self.get_end_of_month(second_group_date)
+                        
+                        periods.append({
+                            "start_date": first_group["join_date"],
+                            "end_date": end_of_second_group_month.strftime("%d/%m/%Y"),
+                            "active_groups": [first_group],
+                            "discount_applies": False,
+                            "reason": "קבוצה ראשונה לבד עד סוף חודש הצטרפות לקבוצה שנייה"
+                        })
+                        
+                        periods.append({
+                            "start_date": second_group["join_date"],
+                            "end_date": end_of_second_group_month.strftime("%d/%m/%Y"),
+                            "active_groups": [second_group],
+                            "discount_applies": False,
+                            "reason": "קבוצה שנייה לבד עד סוף חודש ההצטרפות"
+                        })
+                        
+                        if end_of_second_group_month < end_date:
+                            discount_start_date = end_of_second_group_month + timedelta(days=1)
+                            periods.append({
+                                "start_date": discount_start_date.strftime("%d/%m/%Y"),
+                                "end_date": end_date.strftime("%d/%m/%Y"),
+                                "active_groups": groups_with_dates[:2],  
+                                "discount_applies": True,
+                                "reason": "שתי הקבוצות יחד עם הנחה - מתחילת החודש שאחרי הצטרפות לקבוצה השנייה"
+                            })
+                    
+                    if len(groups_with_dates) > 2:
+                        for i in range(2, len(groups_with_dates)):
+                            additional_group = groups_with_dates[i]
+                            additional_group_date = datetime.strptime(additional_group["join_date"], "%d/%m/%Y")
+                            additional_group_id = self.get_group_id_by_name(additional_group["group_name"])
+                            end_of_additional_month = self.get_end_of_month(additional_group_date)
+                            
+                            additional_meetings = self.count_meetings_in_date_range(
+                                additional_group_id, additional_group_date, end_of_additional_month
+                            )
+                            
+                            starts_at_month_beginning = additional_group_date.day <= 5
+                            
+                            if additional_meetings >= 3 or starts_at_month_beginning:
+                                start_of_additional_month = additional_group_date.replace(day=1)
+                                if periods and periods[-1]["discount_applies"]:
+                                    periods[-1]["end_date"] = (start_of_additional_month - timedelta(days=1)).strftime("%d/%m/%Y")
+                                
+                                if start_of_additional_month <= end_date:
+                                    periods.append({
+                                        "start_date": start_of_additional_month.strftime("%d/%m/%Y"),
+                                        "end_date": end_date.strftime("%d/%m/%Y"),
+                                        "active_groups": groups_with_dates[:i+1],
+                                        "discount_applies": True,
+                                        "reason": f"כל {i+1} הקבוצות יחד עם הנחה - מתחילת החודש של קבוצה {i+1} (מחיר מלא)"
+                                    })
+                            else:
+                                periods.append({
+                                    "start_date": additional_group["join_date"],
+                                    "end_date": end_of_additional_month.strftime("%d/%m/%Y"),
+                                    "active_groups": [additional_group],
+                                    "discount_applies": False,
+                                    "reason": f"קבוצה {i+1} לבד עד סוף חודש ההצטרפות"
+                                })
+                                
+                                if end_of_additional_month < end_date:
+                                    next_month_start = end_of_additional_month + timedelta(days=1)
+                                    
+                                    updated = False
+                                    for period in periods:
+                                        if period["discount_applies"] and len(period["active_groups"]) == i:
+                                            if datetime.strptime(period["start_date"], "%d/%m/%Y") > next_month_start:
+                                                period["start_date"] = next_month_start.strftime("%d/%m/%Y")
+                                            period["active_groups"] = groups_with_dates[:i+1]
+                                            period["reason"] = f"כל {i+1} הקבוצות יחד עם הנחה"
+                                            updated = True
+                                            break
+                                    
+                                    if not updated:
+                                        periods.append({
+                                            "start_date": next_month_start.strftime("%d/%m/%Y"),
+                                            "end_date": end_date.strftime("%d/%m/%Y"),
+                                            "active_groups": groups_with_dates[:i+1],
+                                            "discount_applies": True,
+                                            "reason": f"כל {i+1} הקבוצות יחד עם הנחה"
+                                        })
+            
             return periods
             
         except Exception as e:
             print(f"DEBUG: Error creating discount periods: {e}")
             return []
-
 
 
     def calculate_period_payment_with_discount_rules(self, student_id, period):

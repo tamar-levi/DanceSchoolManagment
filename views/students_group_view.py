@@ -251,6 +251,23 @@ class StudentsGroupView:
 
     def _create_contact_info(self, student):
         """Create contact information section"""
+        # קבלת תאריך הצטרפות לקבוצה הנוכחית באמצעות PaymentCalculator
+        from utils.payment_utils import PaymentCalculator
+        
+        display_join_date = student.get('join_date', 'לא ידוע')  # ברירת מחדל
+        
+        try:
+            payment_calculator = PaymentCalculator()
+            group_id = payment_calculator.get_group_id_by_name(self.group_name)
+            student_id = student.get('id', '')
+            
+            if group_id and student_id:
+                join_date_for_group = payment_calculator.get_student_join_date_for_group(student_id, group_id)
+                if join_date_for_group:
+                    display_join_date = join_date_for_group
+        except Exception as e:
+            print(f"Error getting join date for group: {e}")
+        
         return ft.Container(
             content=ft.Column([
                 ft.Row([
@@ -265,7 +282,7 @@ class StudentsGroupView:
                 ft.Row([
                     ft.Icon(ft.Icons.CALENDAR_TODAY, size=14, color=ft.Colors.GREY_500),
                     ft.Text(
-                        student.get('join_date', 'לא ידוע'),
+                        display_join_date,  # ← תאריך לפי קבוצה באמצעות PaymentCalculator
                         size=12,
                         color=ft.Colors.GREY_600,
                         overflow=ft.TextOverflow.ELLIPSIS
