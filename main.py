@@ -1,11 +1,26 @@
 import flet as ft
 import os
 from typing import Optional
+import os
+import json
 from pages.choose_group_attendance_page import AttendancePage
 from pages.groups_page import GroupsPage  
 from pages.students_list import StudentsListPage
 from pages.payment_page import PaymentPage
 from utils.dashboard_data import get_all_dashboard_data
+
+def ensure_pricing_file():
+    base_dir = os.path.join(os.environ["LOCALAPPDATA"], "DanceSchool", "data")
+    os.makedirs(base_dir, exist_ok=True)
+
+    pricing_file = os.path.join(base_dir, "pricing.json")
+
+    if not os.path.exists(pricing_file):
+        default_data = {"single": 180, "two": 280, "three": 360, "sister": 20}
+        with open(pricing_file, "w", encoding="utf-8") as f:
+            json.dump(default_data, f, indent=4)
+
+    return pricing_file
 
 def format_currency(amount):
     return f"₪{amount:,}"
@@ -463,8 +478,9 @@ class MainApp:
         self.page.update()
 
 def main(page: ft.Page):
+    pricing_file = ensure_pricing_file() 
+    print("Pricing file ready at:", pricing_file)
     app = MainApp(page)
-
 
 if __name__ == '__main__':
     ft.app(target=main)

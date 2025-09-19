@@ -7,3 +7,10 @@ data/
 attendances/
 /data
 /attendances
+icon.ico
+main.spec
+dist/
+build/
+README.txt
+setup.iss
+Output/
