@@ -1,3 +1,4 @@
+from datetime import datetime
 import json
 import flet as ft
 from pages.students_page import StudentsPage
@@ -128,7 +129,16 @@ class GroupsPage:
 
     def create_group_card(self, group):
         """Create a modern group card with edit and delete options"""
-        
+        end_date_str = group.get("group_end_date")
+        course_ended = False
+        if end_date_str:
+            try:
+                end_date = datetime.strptime(end_date_str, "%d/%m/%Y")
+                if end_date < datetime.today():
+                    course_ended = True
+            except Exception as e:
+                print("Error parsing end date:", e)
+
         return ft.Container(
             content=ft.Column([
                 ft.Row([
@@ -139,12 +149,22 @@ class GroupsPage:
                         padding=ft.padding.all(12),
                     ),
                     ft.Column([
-                        ft.Text(
-                            group.get("name", "לא צוין"),
-                            size=18,
-                            weight=ft.FontWeight.BOLD,
-                            color="#1a202c"
-                        ),
+                        ft.Row([
+                            ft.Text(
+                                group.get("name", "לא צוין"),
+                                size=18,
+                                weight=ft.FontWeight.BOLD,
+                                color="#1a202c"
+                            ),
+                            *(
+                                [ft.Text(
+                                    "(החוג הסתיים)",
+                                    size=14,
+                                    color="#e53e3e",
+                                    weight=ft.FontWeight.W_600
+                                )] if course_ended else []
+                            )
+                        ], spacing=8),
                         ft.Text(
                             f"מורה: {group.get('teacher', 'לא צוין')}",
                             size=14,
