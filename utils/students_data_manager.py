@@ -258,38 +258,30 @@ class StudentsDataManager:
                 
                 total_paid = sum(
                     float(p['amount']) for p in student['payments']
-                    if p['amount'].replace('.', '', 1).isdigit()
+                    if isinstance(p.get('amount'), (int, float)) or 
+                    (isinstance(p.get('amount'), str) and p['amount'].replace('.', '', 1).isdigit())
                 )
-                
-                student_groups = student.get("groups", [])
-                join_date = student.get("join_date", "")
-                
-                total_owed = 0
-                for group_name in student_groups:
-                    groups = payment_calculator.load_groups()
-                    group = next((g for g in groups if g['name'] == group_name), None)
-                    
-                    if group:
-                        group_id = group.get("id")
-                        group_end_date = group.get("group_end_date", "")
-                        
-                        if group_id and group_end_date:
-                            group_payment = payment_calculator.get_payment_amount_for_period(
-                                group_id, join_date, group_end_date
-                            )
-                            total_owed += group_payment
-                
+
+                calc_result = payment_calculator.calculate_student_payment_until_now(student_id)
+                if calc_result.get("success"):
+                    total_owed = calc_result["total_payment"]
+                else:
+                    total_owed = 0
+
                 if total_owed > 0:
-                    if total_paid >= total_owed:
-                        student['payment_status'] = "שולם"
+                    if total_paid == total_owed:
+                        student['payment_status'] = "שולם במלואו"
+                    elif total_paid > total_owed:
+                        student['payment_status'] = "שילם יותר (זיכוי)"
+                    elif total_paid > 0:
+                        student['payment_status'] = f"שולם עד כה"
                     else:
-                        student['payment_status'] = f"חוב"
+                        student['payment_status'] = f"חוב {total_owed}₪"
                 else:
                     student['payment_status'] = "לא נמצא מחיר קבוצות"
                 break
         
         return self.save_students(students)
-
 
     def _get_groups(self):
         """Get groups data for pricing"""
