@@ -136,12 +136,26 @@ class PaymentCalculator:
         return False
 
 
-    def create_discount_periods_for_student(self, student_id, end_date):
+    def create_discount_periods_for_student(self, student_id, end_date=None):
         """Creates payment periods with cutoff when a group closes and considers start/end dates"""
         try:
             groups_with_dates = self.get_student_groups_with_join_dates(student_id)
             if not groups_with_dates:
                 return []
+            
+            all_end_dates = [
+                datetime.strptime(g["end_date"], "%d/%m/%Y")
+                for g in groups_with_dates if g.get("end_date")
+            ]
+
+            if all_end_dates:
+                max_end_date = max(all_end_dates)
+            else:
+                max_end_date = datetime.now()
+
+            if end_date is None:
+                end_date = max_end_date
+
 
             groups_with_dates.sort(key=lambda x: datetime.strptime(x["join_date"], "%d/%m/%Y"))
             periods = []
@@ -178,20 +192,27 @@ class PaymentCalculator:
                         "reason": f"קבוצה {i+1} לבד עד סוף חודש ההצטרפות (פחות מ-3 שיעורים)"
                     })
 
-                    if len(periods) >= 2:
-                        prev = periods[-2]
-                        prev["end_date"] = end_of_join_month.strftime("%d/%m/%Y")
+                if len(periods) >= 2:
+                    prev = periods[-2]
+                    prev["end_date"] = end_of_join_month.strftime("%d/%m/%Y")
 
-                    next_month_start = end_of_join_month + timedelta(days=1)
-                    if next_month_start <= end_date:
-                        active_groups = groups_with_dates[:i + 1]
+                next_month_start = end_of_join_month + timedelta(days=1)
+                while next_month_start <= end_date:
+                    active_groups = groups_with_dates[:i + 1]
+                    current_end = self.get_end_of_month(next_month_start).strftime("%d/%m/%Y")
+
+                    if periods and set(g["group_id"] for g in periods[-1]["active_groups"]) == set(g["group_id"] for g in active_groups):
+                        periods[-1]["end_date"] = current_end
+                    else:
                         periods.append({
                             "start_date": next_month_start.strftime("%d/%m/%Y"),
-                            "end_date": self.get_end_of_month(next_month_start).strftime("%d/%m/%Y"),
+                            "end_date": current_end,
                             "active_groups": active_groups,
                             "discount_applies": len(active_groups) > 1,
-                            "reason": f"קבוצה {i+1} מצטרפת לאיחוד מהחודש הבא"
+                            "reason": f"קבוצה {i+1} ממשיכה לאיחוד"
                         })
+
+                    next_month_start = self.get_end_of_month(next_month_start) + timedelta(days=1)
 
             final_periods = []
             for period in periods:
@@ -239,7 +260,7 @@ class PaymentCalculator:
             for period in final_periods:
                 valid_groups = []
                 for g in period["active_groups"]:
-                    g_end = datetime.strptime(g["end_date"], "%d/%m/%Y") if g.get("end_date") else end_date
+                    g_end = datetime.strptime(g["end_date"], "%d/%m/%Y") if g.get("end_date") else max_end_date
                     if g_end >= datetime.strptime(period["end_date"], "%d/%m/%Y"):
                         valid_groups.append(g)
 
@@ -273,7 +294,6 @@ class PaymentCalculator:
             print(f"DEBUG: Error creating discount periods with end-date check: {e}")
             return []
 
-        
     def calculate_period_payment_with_discount_rules(self, student_id, period):
         """Calculate payment for a specific period with discount rules"""
         try:
@@ -1048,6 +1068,7 @@ class PaymentCalculator:
                 "error": f"Error updating student sister status: {str(e)}"
             }
 
+
     def get_student_payment_explanation(self, student_id, group_id=None, start_date=None, end_date=None):
         try:
             student = self.get_student_by_id(student_id)
@@ -1105,7 +1126,7 @@ class PaymentCalculator:
                     if latest_end_date:
                         course_periods = self.create_discount_periods_for_student(
                             student_id, 
-                            datetime.strptime(latest_end_date, "%d/%m/%Y")
+                            # datetime.strptime(latest_end_date, "%d/%m/%Y")
                         )
                         
                         for period in course_periods:
@@ -1165,7 +1186,8 @@ class PaymentCalculator:
             period = explanation.get("calculation_period", "")
             student_id = explanation.get("student_id", "")
             periods = explanation.get("periods", [])
-            total_required = explanation.get("total_required", 0)
+            # total_required = explanation.get("total_required", 0)
+            total_required = self.get_student_payment_amount_until_now(student_id)
             total_course_payment = explanation.get("total_course_payment", 0)
             course_end_info = explanation.get("course_end_info", "")
             
@@ -1240,7 +1262,7 @@ class PaymentCalculator:
             ])
             
             if total_course_payment > 0:
-                summary_lines.append(f"סה\"כ לכל הקורס{course_end_info}: {total_course_payment}₪")
+                summary_lines.append(f"סה\"כ לכל הקורס: {total_course_payment}₪")
             
             summary_lines.extend([
                 "",
@@ -1252,7 +1274,7 @@ class PaymentCalculator:
             if balance > 0:
                 summary_lines.append(f"יתרת חוב עד כה: {balance}₪")
             elif balance == 0:
-                summary_lines.append("סטטוס עד כה: שולם במלואו ✓")
+                summary_lines.append("סטטוס עד כה: שולם")
                 
                 if total_course_payment > total_required:
                     remaining_for_course = total_course_payment - total_paid
@@ -1367,7 +1389,7 @@ class PaymentCalculator:
             if balance > 0:
                 lines.append(f"יתרת חוב: {balance}₪")
             elif balance == 0:
-                lines.append("סטטוס: שולם במלואו ✓")
+                lines.append("סטטוס: שולם במלואו ")
             else:
                 lines.append(f"שילם יתר: +{abs(balance)}₪")
             
