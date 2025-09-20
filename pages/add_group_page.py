@@ -1,7 +1,9 @@
+import json
 import flet as ft
 from utils.groups_data_manager import GroupsDataManager
 from utils.add_group_validator import AddGroupValidator
 from components.add_group_components import AddGroupComponents
+from utils.manage_json import ManageJSON  
 
 class AddGroupPage:
     
@@ -10,9 +12,16 @@ class AddGroupPage:
         self.navigation_callback = navigation_callback
         self.groups_page = groups_page
         self.data_manager = GroupsDataManager()
+        data_dir = ManageJSON.get_appdata_path() / "data"
+        data_dir.mkdir(parents=True, exist_ok=True)
+        self.pricing_config_file = data_dir / "pricing.json"
+        if self.pricing_config_file.exists():
+            with open(self.pricing_config_file, "r", encoding="utf-8") as f:
+                config = json.load(f)
+                self.base_price = config.get("single", 180)
 
         self.form_state = {
-            'name': '', 'location': '', 'price': '', 'age': '',
+            'name': '', 'location': '', 'price': str(self.base_price), 'age': '',
             'teacher': '', 'start_date': '', 'end_date': '', 'day_of_week': '',
             'phone': '', 'email': '',
         }
@@ -27,6 +36,14 @@ class AddGroupPage:
         self.form_fields = self._create_form_fields()
         self.main_layout = self._render()
 
+    def _create_price_field(self):
+        price_field = AddGroupComponents.create_text_field(
+            "מחיר לחודש *", f"{self.base_price} ₪", ft.Icons.PAYMENTS_OUTLINED, 'price'
+        )
+        price_field.value = str(self.base_price)  
+        price_field.disabled = True               
+        return price_field
+    
     def _create_form_fields(self):
         """Create form fields"""
         return {
@@ -38,11 +55,7 @@ class AddGroupPage:
                 "מיקום *", "מיקום הקבוצה", ft.Icons.LOCATION_ON_OUTLINED,
                 'location', required=True, on_change=self._handle_field_change, on_blur=self._validate_field
             ),
-            'price': AddGroupComponents.create_text_field(
-                "מחיר לחודש *", "מחיר לחודש", ft.Icons.PAYMENTS_OUTLINED,
-                'price', suffix="₪", keyboard_type=ft.KeyboardType.NUMBER, required=True,
-                on_change=self._handle_field_change, on_blur=self._validate_field
-            ),
+            'price': self._create_price_field(),
             'age': AddGroupComponents.create_text_field(
                 "קבוצת גיל *", "טווח גילאים (לדוג' 6-8)", ft.Icons.GROUPS_OUTLINED,
                 'age', required=True, on_change=self._handle_field_change, on_blur=self._validate_field
@@ -317,11 +330,7 @@ class AddGroupPage:
             AddGroupComponents.show_error_dialog(self.page, "ישנם ערכים חסרים או שגויים. בדוק את הטופס ותקן בהתאם")
             return
         
-        price_value = self.form_state['price'].strip()
-        try:
-            price_int = int(price_value) if price_value and price_value.isdigit() else 0
-        except (ValueError, TypeError):
-            price_int = 0
+        price_int = self.base_price
         
         group_data = {
             "name": self.form_state['name'].strip(),

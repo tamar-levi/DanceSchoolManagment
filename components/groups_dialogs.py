@@ -70,7 +70,8 @@ class GroupDialogs:
             filled=True,
             fill_color="#fafbfc",
             content_padding=ft.padding.symmetric(horizontal=16, vertical=14),
-            cursor_color="#3b82f6"
+            cursor_color="#3b82f6",
+            disabled=True
         )
         
         location_field = ft.TextField(
