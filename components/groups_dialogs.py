@@ -1,3 +1,4 @@
+from datetime import datetime
 import flet as ft
 import json
 from utils.manage_json import ManageJSON
@@ -70,8 +71,7 @@ class GroupDialogs:
             filled=True,
             fill_color="#fafbfc",
             content_padding=ft.padding.symmetric(horizontal=16, vertical=14),
-            cursor_color="#3b82f6",
-            disabled=True
+            cursor_color="#3b82f6"
         )
         
         location_field = ft.TextField(
@@ -225,9 +225,22 @@ class GroupDialogs:
             error_container.visible = True
             page.update()
 
+        def validate_date(date_str):
+            try:
+                datetime.strptime(date_str, "%d/%m/%Y")
+                return True
+            except ValueError:
+                return False
+            
         def save_changes(e):
             try:
                 error_container.visible = False
+                if start_date_field.value.strip() and not validate_date(start_date_field.value.strip()):
+                    show_error_dialog("תאריך התחלה לא תקין (dd/mm/yyyy)")
+                    return
+                if end_date_field.value.strip() and not validate_date(end_date_field.value.strip()):
+                    show_error_dialog("תאריך סיום לא תקין (dd/mm/yyyy)")
+                    return
                 
                 new_group_name = name_field.value.strip() if name_field.value.strip() else "לא צוין"
                 current_group_name = group.get("name", "")

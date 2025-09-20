@@ -6,6 +6,8 @@ from components.form_fields import FormFields
 from views.add_student_view import AddStudentView
 from utils.students_data_manager import StudentsDataManager
 from utils.manage_json import ManageJSON
+import re
+from datetime import datetime
 
 class AddStudentPage:
     def __init__(self, page, navigation_callback, group_name):
@@ -242,6 +244,7 @@ class AddStudentPage:
             "payments": []
         }
 
+
     def validate_form(self, form_data):
         """Validate form data"""
         required_fields = ["id", "name", "phone", "group", "payment_status", "join_date"]
@@ -249,11 +252,26 @@ class AddStudentPage:
             self.dialog.show_error("יש למלא את כל השדות הנדרשים")
             return False
 
+        # תעודת זהות
         if not form_data["id"].isdigit() or len(form_data["id"]) != 9:
             self.dialog.show_error("מספר תעודת זהות חייב להכיל 9 ספרות בלבד")
             return False
 
+        # תאריך הצטרפות
+        join_date = form_data["join_date"].strip()
+        try:
+            datetime.strptime(join_date, "%d/%m/%Y")
+        except ValueError:
+            # נבדוק אם בכלל הפורמט לא נכון
+            date_pattern = r'^\d{2}/\d{2}/\d{4}$'
+            if not re.match(date_pattern, join_date):
+                self.dialog.show_error("פורמט תאריך הצטרפות לא תקין — השתמשי ב־dd/mm/yyyy")
+            else:
+                self.dialog.show_error("תאריך הצטרפות לא קיים (בדקי יום/חודש/שנה)")
+            return False
+
         return True
+
 
     def go_back(self, e=None):
         """Navigate back to students page"""

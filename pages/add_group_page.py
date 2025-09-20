@@ -1,9 +1,12 @@
 import json
+import re
 import flet as ft
+from datetime import datetime
 from utils.groups_data_manager import GroupsDataManager
 from utils.add_group_validator import AddGroupValidator
 from components.add_group_components import AddGroupComponents
 from utils.manage_json import ManageJSON  
+
 
 class AddGroupPage:
     
@@ -19,6 +22,8 @@ class AddGroupPage:
             with open(self.pricing_config_file, "r", encoding="utf-8") as f:
                 config = json.load(f)
                 self.base_price = config.get("single", 180)
+        else:
+            self.base_price = 180
 
         self.form_state = {
             'name': '', 'location': '', 'price': str(self.base_price), 'age': '',
@@ -93,21 +98,53 @@ class AddGroupPage:
             del self.validation_errors[key]
             self._update_field_style(key)
 
+
     def _validate_field(self, key, value):
-        """Validate individual field"""
-        error = AddGroupValidator.validate_field(key, value, self.required_fields)
-        
-        if key == 'name' and not error and value and value.strip():
-            if self._check_group_name_exists(value.strip()):
-                error = "קבוצה בשם זה כבר קיימת במערכת"
-        
+        """Validate individual field with detailed date errors"""
+        error = None
+
+        if key == 'name':
+            error = AddGroupValidator.validate_field(key, value, self.required_fields)
+            if not error and value and value.strip():
+                if self._check_group_name_exists(value.strip()):
+                    error = "קבוצה בשם זה כבר קיימת במערכת"
+
+        elif key in ('start_date', 'end_date'):
+            val = (value or "").strip()
+            if not val:
+                error = "שדה חובה"
+            else:
+                try:
+                    datetime.strptime(val, "%d/%m/%Y")
+                except ValueError:
+                    date_pattern = r'^\d{2}/\d{2}/\d{4}$'
+                    if not re.match(date_pattern, val):
+                        error = "פורמט תאריך לא תקין — השתמש/י ב־dd/mm/yyyy"
+                    else:
+                        error = "תאריך לא קיים (בדוק יום/חודש/שנה)"
+
+            if key == "end_date" and not error:
+                start = self.form_state.get("start_date", "").strip()
+                if start:
+                    try:
+                        start_dt = datetime.strptime(start, "%d/%m/%Y")
+                        end_dt = datetime.strptime(val, "%d/%m/%Y")
+                        if end_dt < start_dt:
+                            error = "תאריך סיום חייב להיות אחרי תאריך התחלה"
+                    except ValueError:
+                        pass  
+
+        else:
+            error = AddGroupValidator.validate_field(key, value, self.required_fields)
+
         if error:
             self.validation_errors[key] = error
         elif key in self.validation_errors:
             del self.validation_errors[key]
-        
+
         self._update_field_style(key)
         return error is None
+
 
     def _check_group_name_exists(self, group_name):
         """Check if group name already exists"""

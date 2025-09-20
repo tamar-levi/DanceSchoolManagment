@@ -460,54 +460,45 @@ class StudentEditView:
         )
 
     def _validate_and_format_date(self, date_str):
-        """Validate and format date - accepts multiple formats"""
+        """Validate and format date - accepts multiple formats and checks if date exists"""
         if not date_str or not date_str.strip():
             return False, "תאריך הוא שדה חובה"
         
         date_str = date_str.strip()
-        
+
+        import re
+        pattern = r"^\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}$"
+        if not re.match(pattern, date_str):
+            return False, "פורמט תאריך לא תקין (דוגמא: 25/12/2023)"
+
         date_formats = [
-            "%d/%m/%Y",    # 25/12/2023
-            "%d-%m-%Y",    # 25-12-2023
-            "%d.%m.%Y",    # 25.12.2023
-            "%d/%m/%y",    # 25/12/23
-            "%d-%m-%y",    # 25-12-23
-            "%d.%m.%y",    # 25.12.23
-            
-            "%Y/%m/%d",    # 2023/12/25
-            "%Y-%m-%d",    # 2023-12-25
-            "%Y.%m.%d",    # 2023.12.25
-            "%y/%m/%d",    # 23/12/25
-            "%y-%m-%d",    # 23-12-25
-            "%y.%m.%d",    # 23.12.25
-            
-            "%m/%d/%Y",    # 12/25/2023
-            "%m-%d-%Y",    # 12-25-2023
-            "%m.%d.%Y",    # 12.25.2023
-            "%m/%d/%y",    # 12/25/23
-            "%m-%d-%y",    # 12-25-23
-            "%m.%d.%y",    # 12.25.23
+            "%d/%m/%Y", "%d-%m-%Y", "%d.%m.%Y",
+            "%d/%m/%y", "%d-%m-%y", "%d.%m.%y",
+            "%Y/%m/%d", "%Y-%m-%d", "%Y.%m.%d",
+            "%y/%m/%d", "%y-%m-%d", "%y.%m.%d",
+            "%m/%d/%Y", "%m-%d-%Y", "%m.%d.%Y",
+            "%m/%d/%y", "%m-%d-%y", "%m.%d.%y",
         ]
-        
+
         from datetime import datetime
-        
         for date_format in date_formats:
             try:
                 parsed_date = datetime.strptime(date_str, date_format)
-                
+
                 if parsed_date.year < 100:
-                    if parsed_date.year < 50: 
+                    if parsed_date.year < 50:
                         parsed_date = parsed_date.replace(year=parsed_date.year + 2000)
-                    else:  
+                    else:
                         parsed_date = parsed_date.replace(year=parsed_date.year + 1900)
-                
+
                 formatted_date = parsed_date.strftime("%d/%m/%Y")
                 return True, formatted_date
-                
+
             except ValueError:
                 continue
-        
-        return False, "פורמט תאריך לא תקין. דוגמאות תקינות: 25/12/2023, 2023/12/25, 25-12-2023"
+
+        return False, "תאריך לא קיים (בדקי יום/חודש/שנה)"
+
 
     def _update_joining_dates(self, student_id: str, name: str, join_date: str):
         """Update joining_dates.json with the new date only for the current group"""
