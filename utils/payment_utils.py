@@ -101,12 +101,14 @@ class PaymentCalculator:
                     join_date = self.get_student_join_date_for_group(student_id, group_id)
                     group = self.get_group_by_id(group_id)
                     if join_date and group:
+                        group_start_date = group.get("group_start_date")
                         end_date = group.get("group_end_date") 
                         groups_with_dates.append({
                             "group_name": group_name,
                             "group_id": group_id,
                             "join_date": join_date,
-                            "end_date": end_date
+                            "end_date": end_date,
+                            "start_date": group_start_date, 
                         })
             
             groups_with_dates.sort(key=lambda x: datetime.strptime(x["join_date"], "%d/%m/%Y"))
@@ -162,6 +164,16 @@ class PaymentCalculator:
 
             for i, group in enumerate(groups_with_dates):
                 join_date = datetime.strptime(group["join_date"], "%d/%m/%Y")
+
+                group_start_str = group.get("start_date")
+                if group_start_str:
+                    group_start = datetime.strptime(group_start_str, "%d/%m/%Y")
+                    if group_start > join_date:
+                        join_date = group_start
+
+                if join_date > datetime.now():
+                    continue
+
                 group_id = group["group_id"]
                 end_of_join_month = self.get_end_of_month(join_date)
                 meetings = self.count_meetings_in_date_range(group_id, join_date, end_of_join_month)
