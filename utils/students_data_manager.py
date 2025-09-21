@@ -274,7 +274,7 @@ class StudentsDataManager:
 
                 if total_owed > 0:
                     if total_paid == total_owed:
-                        student['payment_status'] = "שולם במלואו"
+                        student['payment_status'] = "שולם"
                     elif total_paid > total_owed:
                         student['payment_status'] = "שילם יותר (זיכוי)"
                     elif total_paid > 0:
