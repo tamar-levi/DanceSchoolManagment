@@ -203,47 +203,43 @@ class StudentEditView:
             except (ValueError, AttributeError):
                 continue
         
-        
         if payment_status == "שולם":
             return "שולם", ft.Colors.GREEN_600
+        
         elif payment_status == "חוב":
             payment_calculator = PaymentCalculator()
             
-            if payment_calculator:
-                try:
-                    if student_id:
-                        total_owed_until_now = payment_calculator.get_student_payment_amount_until_now(student_id)
-                    else:
-                        total_owed_until_now = 0
-                        for group_name in student_groups:
-                            group_id = payment_calculator.get_group_id_by_name(group_name)
-                            if group_id:
-                                actual_join_date = payment_calculator.get_student_join_date_for_group(student_id, group_id)
-                                if actual_join_date:
-                                    group_payment = payment_calculator.get_payment_amount_until_now(group_id, actual_join_date)
-                                    total_owed_until_now += group_payment
+            try:
+                if student_id:
+                    total_owed_until_now = payment_calculator.get_student_payment_amount_until_now(student_id)
+                else:
+                    total_owed_until_now = 0
+                    for group_name in student_groups:
+                        group_id = payment_calculator.get_group_id_by_name(group_name)
+                        if group_id:
+                            actual_join_date = payment_calculator.get_student_join_date_for_group(student_id, group_id)
+                            if actual_join_date:
+                                group_payment = payment_calculator.get_payment_amount_until_now(group_id, actual_join_date)
+                                total_owed_until_now += group_payment
+                
+                if isinstance(total_owed_until_now, str):
+                    total_owed_until_now = float(total_owed_until_now) if total_owed_until_now.strip() else 0
+                
+                if amount_paid >= total_owed_until_now:
+                    return "שולם עד כה", ft.Colors.ORANGE_600
+                else:
+                    return "חוב", ft.Colors.RED_600
                     
-                    if isinstance(total_owed_until_now, str):
-                        total_owed_until_now = float(total_owed_until_now) if total_owed_until_now.strip() else 0
-                    
-                    if amount_paid >= total_owed_until_now:
-                        return "שולם עד כה"
-                    else:
-                        return "חוב"
-                        
-                except Exception as e:
-                    print(f"Error calculating payment status: {e}")
-                    return "חוב"
-            else:
-                print("DEBUG: Payment calculator not found, returning 'חוב'")
-                return "חוב"
-        else:
-            return payment_status, ft.Colors.GREY_600
+            except Exception as e:
+                print(f"Error calculating payment status: {e}")
+                return "חוב", ft.Colors.RED_600
+        
+        return payment_status or "לא ידוע", ft.Colors.GREY_600
 
     def _create_payment_status_display(self):
         """Create payment status display (read-only)"""
-        display_status = self._get_payment_display_status()
-        
+        status_text, status_color = self._get_payment_display_status()
+
         return ft.Container(
             content=ft.Column([
                 ft.Text(
@@ -254,11 +250,12 @@ class StudentEditView:
                 ),
                 ft.Container(
                     content=ft.Row([
-                        ft.Icon(ft.Icons.PAYMENT_OUTLINED, size=20, color="#64748b"),
+                        ft.Icon(ft.Icons.PAYMENT_OUTLINED, size=20, color=status_color),
                         ft.Text(
-                            display_status,
+                            status_text,
                             size=16,
                             weight=ft.FontWeight.W_400,
+                            color=status_color
                         )
                     ], spacing=12),
                     padding=ft.padding.symmetric(horizontal=16, vertical=16),
@@ -268,6 +265,7 @@ class StudentEditView:
                 )
             ], spacing=8)
         )
+
 
     def _create_form_grid(self):
         """Create form fields in a responsive grid layout"""
