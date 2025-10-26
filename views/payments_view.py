@@ -234,7 +234,7 @@ class PaymentsView:
             if balance > 0:
                 lines.append(f"יתרת חוב: {balance}₪")
             elif balance == 0:
-                lines.append("סטטוס תשלום עד סוף חודש זה: שולם ")
+                lines.append("סטטוס תשלום עד סוף חודש זה: שולם חלקית")
             else:
                 lines.append(f"יתרת זכות: {abs(balance)}₪")
             

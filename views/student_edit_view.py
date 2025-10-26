@@ -183,13 +183,17 @@ class StudentEditView:
         )
 
     def _get_payment_display_status(self):
-        """Get the display status for payment based on the logic from students_table.py"""
-        payment_status = self.student.get('payment_status', '')
+        """Get the display status for payment using current rules:
+        - שולם במלואו (שולם עד סוף הקורס)
+        - שולם חלקית (אם שולם עד סוף החודש או יותר אך פחות מעד סוף הקורס)
+        - חוב (אם שולם פחות מעד סוף החודש או לא שולם בכלל)
+        """
         student_groups = self.student.get('groups', [])
         student_id = self.student.get('id', '')
-        
+
+        # sum paid
         payments = self.student.get('payments', [])
-        amount_paid = 0
+        amount_paid = 0.0
         for payment in payments:
             try:
                 amount = payment.get('amount', 0)
@@ -202,39 +206,56 @@ class StudentEditView:
                 amount_paid += amount
             except (ValueError, AttributeError):
                 continue
-        
-        if payment_status == "שולם":
-            return "שולם", ft.Colors.GREEN_600
-        
-        elif payment_status == "חוב":
-            payment_calculator = PaymentCalculator()
-            
-            try:
-                if student_id:
-                    total_owed_until_now = payment_calculator.get_student_payment_amount_until_now(student_id)
+
+        payment_calculator = PaymentCalculator()
+
+        try:
+            total_owed_until_now = payment_calculator.get_student_payment_amount_until_now(student_id) if student_id else 0
+            # compute total course payment (sum over all periods until groups end)
+            total_course_payment = 0
+            groups_with_dates = payment_calculator.get_student_groups_with_join_dates(student_id)
+            latest_end_date = None
+            from datetime import datetime
+            for g in groups_with_dates:
+                end = g.get("end_date")
+                if end:
+                    try:
+                        dt = datetime.strptime(end, "%d/%m/%Y")
+                        if latest_end_date is None or dt > latest_end_date:
+                            latest_end_date = dt
+                    except Exception:
+                        continue
+
+            if latest_end_date:
+                periods = payment_calculator.create_discount_periods_for_student(student_id, latest_end_date)
+                for period in periods:
+                    pr = payment_calculator.calculate_period_payment_with_discount_rules(student_id, period)
+                    if pr.get("success"):
+                        total_course_payment += pr.get("total_payment", 0)
+
+            # decide status
+            if total_course_payment and amount_paid >= total_course_payment:
+                if amount_paid == total_course_payment:
+                    return "שולם במלואו", ft.Colors.GREEN_600
                 else:
+                    return "שילם יותר (זיכוי)", ft.Colors.GREEN_600
+            else:
+                # compare to owed until now
+                try:
+                    total_owed_until_now = float(total_owed_until_now)
+                except Exception:
                     total_owed_until_now = 0
-                    for group_name in student_groups:
-                        group_id = payment_calculator.get_group_id_by_name(group_name)
-                        if group_id:
-                            actual_join_date = payment_calculator.get_student_join_date_for_group(student_id, group_id)
-                            if actual_join_date:
-                                group_payment = payment_calculator.get_payment_amount_until_now(group_id, actual_join_date)
-                                total_owed_until_now += group_payment
-                
-                if isinstance(total_owed_until_now, str):
-                    total_owed_until_now = float(total_owed_until_now) if total_owed_until_now.strip() else 0
-                
-                if amount_paid >= total_owed_until_now:
-                    return "שולם עד כה", ft.Colors.ORANGE_600
-                else:
+
+                if amount_paid >= total_owed_until_now and total_owed_until_now > 0:
+                    return "שולם חלקית", ft.Colors.ORANGE_600
+                elif amount_paid < total_owed_until_now:
                     return "חוב", ft.Colors.RED_600
-                    
-            except Exception as e:
-                print(f"Error calculating payment status: {e}")
-                return "חוב", ft.Colors.RED_600
-        
-        return payment_status or "לא ידוע", ft.Colors.GREY_600
+                else:
+                    return "לא ידוע", ft.Colors.GREY_600
+
+        except Exception as e:
+            print(f"Error calculating payment status: {e}")
+            return self.student.get('payment_status', 'לא ידוע'), ft.Colors.GREY_600
 
     def _create_payment_status_display(self):
         """Create payment status display (read-only)"""

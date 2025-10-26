@@ -227,6 +227,17 @@ class PaymentPage:
                 if self.stats_section:
                     self.stats_section.content = self.create_stats_section()
                 
+                snackbar = ft.SnackBar(
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.CHECK_CIRCLE, color=ft.Colors.WHITE),
+                        ft.Text("התשלום עודכן בהצלחה", color=ft.Colors.WHITE, rtl=True)
+                    ], spacing=8),
+                    bgcolor=ft.Colors.GREEN_600,
+                    duration=500, 
+                )
+                self.page.overlay.append(snackbar)
+                snackbar.open = True
+                
                 self.page.update()
         
         def cancel_edit(e):
@@ -280,6 +291,17 @@ class PaymentPage:
                 
                 if self.stats_section:
                     self.stats_section.content = self.create_stats_section()
+                
+                snackbar = ft.SnackBar(
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.CHECK_CIRCLE, color=ft.Colors.WHITE),
+                        ft.Text("התשלום נמחק בהצלחה", color=ft.Colors.WHITE, rtl=True)
+                    ], spacing=8),
+                    bgcolor=ft.Colors.GREEN_600,
+                    duration=500, 
+                )
+                self.page.overlay.append(snackbar)
+                snackbar.open = True
                 
                 self.page.update()
         

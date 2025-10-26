@@ -1282,31 +1282,53 @@ class PaymentCalculator:
                 "─" * 40,
                 f"שולם עד כה: {total_paid}₪",
             ])
-            
+
+            # Interpret status according to standardized rules:
+            # - שולם במלואו: paid == total_course_payment (if course total available)
+            # - שילם יותר (זיכוי): paid > total_course_payment
+            # - שולם חלקית: paid >= total_required (owed until now) but < total_course_payment
+            # - חוב: paid < total_required
             if balance > 0:
+                # owes money until now
                 summary_lines.append(f"יתרת חוב עד כה: {balance}₪")
             elif balance == 0:
-                summary_lines.append("סטטוס עד כה: שולם")
-                
-                if total_course_payment > total_required:
-                    remaining_for_course = total_course_payment - total_paid
-                    if remaining_for_course > 0:
-                        summary_lines.append(f"נותר לשלם עד סוף הקורס: {remaining_for_course}₪")
-                    else:
+                # paid up to required until now
+                if total_course_payment > 0:
+                    if total_paid == total_course_payment:
+                        summary_lines.append("סטטוס: שולם במלואו")
                         summary_lines.append("שולם גם לכל הקורס! ✓")
+                    elif total_paid > total_course_payment:
+                        summary_lines.append("סטטוס: שילם יותר (זיכוי)")
+                        total_course_balance = total_course_payment - total_paid
+                        if total_course_balance > 0:
+                            summary_lines.append(f"נותר לשלם עד סוף הקורס: {total_course_balance}₪")
+                        elif total_course_balance == 0:
+                            summary_lines.append("שילם את כל הקורס במלואו! ✓")
+                        else:
+                            summary_lines.append(f"שילם יתר על כל הקורס: {abs(total_course_balance)}₪")
+                            summary_lines.append("ניתן להחזיר את העודף או לזכות לקורס הבא")
+                    else:
+                        # paid up to month but less than full course
+                        summary_lines.append("סטטוס: שולם חלקית")
+                        remaining_for_course = total_course_payment - total_paid
+                        if remaining_for_course > 0:
+                            summary_lines.append(f"נותר לשלם עד סוף הקורס: {remaining_for_course}₪")
                 else:
-                    summary_lines.append("התשלום מושלם ✓")
+                    # no defined full-course total -> consider as partial/full relative to required
+                    summary_lines.append("סטטוס: שולם חלקית")
             else:
+                # overpaid relative to required
                 overpaid_amount = abs(balance)
                 summary_lines.append(f"שילם יותר מהנדרש עד כה: +{overpaid_amount}₪")
-                
+
                 if total_course_payment > 0:
                     total_course_balance = total_course_payment - total_paid
-                    
+
                     if total_course_balance > 0:
                         summary_lines.append(f"נותר לשלם עד סוף הקורס: {total_course_balance}₪")
                         summary_lines.append("סטטוס: שילם מראש חלק מהתשלומים הבאים")
                     elif total_course_balance == 0:
+                        summary_lines.append("סטטוס: שולם במלואו")
                         summary_lines.append("שילם את כל הקורס במלואו! ✓")
                     else:
                         summary_lines.append(f"שילם יתר על כל הקורס: {abs(total_course_balance)}₪")
@@ -1401,7 +1423,17 @@ class PaymentCalculator:
             if balance > 0:
                 lines.append(f"יתרת חוב: {balance}₪")
             elif balance == 0:
-                lines.append("סטטוס: שולם במלואו ")
+                # Determine short status using standardized rules
+                if explanation.get("total_course_payment", 0) > 0:
+                    tcp = explanation.get("total_course_payment", 0)
+                    if total_paid == tcp:
+                        lines.append("סטטוס: שולם במלואו")
+                    elif total_paid > tcp:
+                        lines.append("סטטוס: שילם יותר (זיכוי)")
+                    else:
+                        lines.append("סטטוס: שולם חלקית")
+                else:
+                    lines.append("סטטוס: שולם חלקית")
             else:
                 lines.append(f"שילם יתר: +{abs(balance)}₪")
             
