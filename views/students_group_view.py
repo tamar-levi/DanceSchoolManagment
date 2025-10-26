@@ -2,7 +2,6 @@ import flet as ft
 from components.modern_card import ModernCard
 from components.clean_button import CleanButton
 
-
 class StudentsGroupView:
     """View for displaying students list"""
     
@@ -124,7 +123,6 @@ class StudentsGroupView:
         from utils.payment_utils import PaymentCalculator        
         payment_calculator = PaymentCalculator()
 
-        # compute paid amount
         payments = student.get('payments', [])
         total_paid = 0.0
         for payment in payments:
@@ -141,7 +139,6 @@ class StudentsGroupView:
                 continue
 
         student_id = student.get('id', '')
-        # owed until now
         if student_id:
             total_owed_until_now = payment_calculator.get_student_payment_amount_until_now(student_id)
         else:
@@ -155,7 +152,6 @@ class StudentsGroupView:
                         group_payment = payment_calculator.get_payment_amount_until_now(group_id, join_date)
                         total_owed_until_now += group_payment
 
-        # compute total course payment
         total_course_payment = 0
         try:
             groups_with_dates = payment_calculator.get_student_groups_with_join_dates(student_id)
@@ -281,10 +277,9 @@ class StudentsGroupView:
 
     def _create_contact_info(self, student):
         """Create contact information section"""
-        # קבלת תאריך הצטרפות לקבוצה הנוכחית באמצעות PaymentCalculator
         from utils.payment_utils import PaymentCalculator
         
-        display_join_date = student.get('join_date', 'לא ידוע')  # ברירת מחדל
+        display_join_date = student.get('join_date', 'לא ידוע') 
         
         try:
             payment_calculator = PaymentCalculator()
@@ -312,7 +307,7 @@ class StudentsGroupView:
                 ft.Row([
                     ft.Icon(ft.Icons.CALENDAR_TODAY, size=14, color=ft.Colors.GREY_500),
                     ft.Text(
-                        display_join_date,  # ← תאריך לפי קבוצה באמצעות PaymentCalculator
+                        display_join_date,  
                         size=12,
                         color=ft.Colors.GREY_600,
                         overflow=ft.TextOverflow.ELLIPSIS

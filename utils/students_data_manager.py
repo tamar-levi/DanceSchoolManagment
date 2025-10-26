@@ -29,7 +29,6 @@ class StudentsDataManager:
     def get_students_stats(self, students: List[Dict[str, Any]]) -> Dict[str, int]:
         """Calculate students statistics"""
         total_students = len(students)
-        # consider any status starting with 'שולם' as paid (includes partial/full/month)
         paid_students = len([s for s in students if isinstance(s.get("payment_status"), str) and s.get("payment_status").startswith("שולם")])
         unpaid_students = total_students - paid_students
         
@@ -274,7 +273,6 @@ class StudentsDataManager:
                 else:
                     total_owed = 0
 
-                # try to compute total course payment (for all periods until groups end)
                 total_course_payment = 0
                 try:
                     groups_with_dates = payment_calculator.get_student_groups_with_join_dates(student_id)
@@ -298,20 +296,16 @@ class StudentsDataManager:
                 except Exception:
                     total_course_payment = 0
 
-                # decide status: prefer showing if paid until now vs paid for whole course
                 if total_owed > 0:
-                    # if we have full course amount and student paid it (or more)
                     if total_course_payment > 0 and total_paid >= total_course_payment:
                         if total_paid == total_course_payment:
                             student['payment_status'] = "שולם במלואו"
                         else:
                             student['payment_status'] = "שילם יותר (זיכוי)"
                     else:
-                        # paid enough until now (end of current month)
                         if total_paid >= total_owed:
                             student['payment_status'] = "שולם חלקית"
                         else:
-                            # paid less than what's due until now
                             student['payment_status'] = "חוב"
                 else:
                     student['payment_status'] = "לא נמצא מחיר קבוצות"
@@ -368,7 +362,6 @@ class StudentsDataManager:
         else:
             total_owed = 0
             course_started = False
-        # compute total course payment (if possible) to distinguish full-course paid
         total_course_payment = 0
         try:
             groups_with_dates = payment_calculator.get_student_groups_with_join_dates(student.get('id'))
@@ -393,14 +386,12 @@ class StudentsDataManager:
             total_course_payment = 0
 
         if total_owed > 0:
-            # if paid entire course (or overpaid relative to course total)
             if total_course_payment > 0 and total_paid >= total_course_payment:
                 if total_paid == total_course_payment:
                     student['payment_status'] = "שולם במלואו"
                 else:
                     student['payment_status'] = "שילם יותר (זיכוי)"
             else:
-                # paid up to now (end of month)
                 if total_paid >= total_owed:
                     student['payment_status'] = "שולם חלקית"
                 else:

@@ -181,12 +181,10 @@ class StudentsTable:
 
     def _get_payment_style(self, payment_status: str, amount, student_groups, join_date, student_id=None):
         """Get payment status styling"""
-        # Determine actual owed amount until now and show clear labels.
         try:
             if student_id:
                 total_owed_until_now = self.payment_calculator.get_student_payment_amount_until_now(student_id)
             else:
-                # fallback: sum per-group owed until now
                 total_owed_until_now = 0
                 for group_name in student_groups:
                     group_id = self.payment_calculator.get_group_id_by_name(group_name)
@@ -197,14 +195,11 @@ class StudentsTable:
         except Exception:
             total_owed_until_now = 0
 
-        # Normalize numeric values
         try:
             paid_amount = float(amount) if amount is not None else 0.0
         except Exception:
             paid_amount = 0.0
 
-        # Decide status and colors
-        # compute total course payment to distinguish full-course paid
         total_course_payment = 0
         try:
             groups_with_dates = self.payment_calculator.get_student_groups_with_join_dates(student_id)

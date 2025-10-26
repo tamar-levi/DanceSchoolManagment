@@ -1138,7 +1138,6 @@ class PaymentCalculator:
                     if latest_end_date:
                         course_periods = self.create_discount_periods_for_student(
                             student_id, 
-                            # datetime.strptime(latest_end_date, "%d/%m/%Y")
                         )
                         
                         for period in course_periods:
@@ -1198,7 +1197,6 @@ class PaymentCalculator:
             period = explanation.get("calculation_period", "")
             student_id = explanation.get("student_id", "")
             periods = explanation.get("periods", [])
-            # total_required = explanation.get("total_required", 0)
             total_required = self.get_student_payment_amount_until_now(student_id)
             total_course_payment = explanation.get("total_course_payment", 0)
             course_end_info = explanation.get("course_end_info", "")
@@ -1283,16 +1281,10 @@ class PaymentCalculator:
                 f"שולם עד כה: {total_paid}₪",
             ])
 
-            # Interpret status according to standardized rules:
-            # - שולם במלואו: paid == total_course_payment (if course total available)
-            # - שילם יותר (זיכוי): paid > total_course_payment
-            # - שולם חלקית: paid >= total_required (owed until now) but < total_course_payment
-            # - חוב: paid < total_required
+        
             if balance > 0:
-                # owes money until now
                 summary_lines.append(f"יתרת חוב עד כה: {balance}₪")
             elif balance == 0:
-                # paid up to required until now
                 if total_course_payment > 0:
                     if total_paid == total_course_payment:
                         summary_lines.append("סטטוס: שולם במלואו")
@@ -1308,16 +1300,13 @@ class PaymentCalculator:
                             summary_lines.append(f"שילם יתר על כל הקורס: {abs(total_course_balance)}₪")
                             summary_lines.append("ניתן להחזיר את העודף או לזכות לקורס הבא")
                     else:
-                        # paid up to month but less than full course
                         summary_lines.append("סטטוס: שולם חלקית")
                         remaining_for_course = total_course_payment - total_paid
                         if remaining_for_course > 0:
                             summary_lines.append(f"נותר לשלם עד סוף הקורס: {remaining_for_course}₪")
                 else:
-                    # no defined full-course total -> consider as partial/full relative to required
                     summary_lines.append("סטטוס: שולם חלקית")
             else:
-                # overpaid relative to required
                 overpaid_amount = abs(balance)
                 summary_lines.append(f"שילם יותר מהנדרש עד כה: +{overpaid_amount}₪")
 
@@ -1423,7 +1412,6 @@ class PaymentCalculator:
             if balance > 0:
                 lines.append(f"יתרת חוב: {balance}₪")
             elif balance == 0:
-                # Determine short status using standardized rules
                 if explanation.get("total_course_payment", 0) > 0:
                     tcp = explanation.get("total_course_payment", 0)
                     if total_paid == tcp:

@@ -183,15 +183,11 @@ class StudentEditView:
         )
 
     def _get_payment_display_status(self):
-        """Get the display status for payment using current rules:
-        - שולם במלואו (שולם עד סוף הקורס)
-        - שולם חלקית (אם שולם עד סוף החודש או יותר אך פחות מעד סוף הקורס)
-        - חוב (אם שולם פחות מעד סוף החודש או לא שולם בכלל)
+        """Get the display status for payment using current rules
         """
         student_groups = self.student.get('groups', [])
         student_id = self.student.get('id', '')
 
-        # sum paid
         payments = self.student.get('payments', [])
         amount_paid = 0.0
         for payment in payments:
@@ -211,7 +207,6 @@ class StudentEditView:
 
         try:
             total_owed_until_now = payment_calculator.get_student_payment_amount_until_now(student_id) if student_id else 0
-            # compute total course payment (sum over all periods until groups end)
             total_course_payment = 0
             groups_with_dates = payment_calculator.get_student_groups_with_join_dates(student_id)
             latest_end_date = None
@@ -233,14 +228,12 @@ class StudentEditView:
                     if pr.get("success"):
                         total_course_payment += pr.get("total_payment", 0)
 
-            # decide status
             if total_course_payment and amount_paid >= total_course_payment:
                 if amount_paid == total_course_payment:
                     return "שולם במלואו", ft.Colors.GREEN_600
                 else:
                     return "שילם יותר (זיכוי)", ft.Colors.GREEN_600
             else:
-                # compare to owed until now
                 try:
                     total_owed_until_now = float(total_owed_until_now)
                 except Exception:
