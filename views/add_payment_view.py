@@ -16,13 +16,15 @@ class AddPaymentView:
             'amount': '',
             'date': '',
             'payment_method': '',
-            'check_number': ''
+            'check_number': '',
+            'note': ''
         }
         
         self.amount_input = None
         self.date_input = None
         self.payment_method_dropdown = None
         self.check_number_input = None
+        self.note_input = None
 
     def render(self):
         """Render add payment form with modern styling"""
@@ -128,7 +130,8 @@ class AddPaymentView:
                 value=datetime.now().strftime("%d/%m/%Y") 
             ),
             'payment_method': self._create_payment_method_dropdown(),
-            'check_number': self._create_check_number_field()
+            'check_number': self._create_check_number_field(),
+            'note': self._create_note_field()
         }
 
     def _create_text_field(self, label, hint, icon, key, suffix=None, keyboard_type=None, value=""):
@@ -155,6 +158,8 @@ class AddPaymentView:
             self.amount_input = field
         elif key == 'date':
             self.date_input = field
+        elif key == 'note':
+            self.note_input = field
             
         return field
 
@@ -203,6 +208,28 @@ class AddPaymentView:
         )
         
         return self.check_number_input
+
+    def _create_note_field(self):
+        """Create note field for additional information"""
+        self.note_input = ft.TextField(
+            label="הערה (אופציונלי)",
+            hint_text="הוסף הערה או פרטים נוספים",
+            prefix_icon=ft.Icons.NOTE_OUTLINED,
+            border_radius=12,
+            bgcolor="#f8fafc",
+            border_color="#e2e8f0",
+            focused_border_color="#3b82f6",
+            content_padding=ft.padding.symmetric(horizontal=16, vertical=16),
+            text_style=ft.TextStyle(size=15, color="#1e293b"),
+            label_style=ft.TextStyle(size=14, color="#64748b"),
+            hint_style=ft.TextStyle(size=14, color="#94a3b8"),
+            multiline=True,
+            min_lines=2,
+            max_lines=4,
+            on_change=lambda e: self._handle_field_change('note', e.control.value)
+        )
+        
+        return self.note_input
 
     def _handle_field_change(self, key, value):
         """Handle field changes (React-like state management)"""
@@ -325,6 +352,7 @@ class AddPaymentView:
         self.form_state['payment_method'] = self.payment_method_dropdown.value if self.payment_method_dropdown.value else ""
         if self.check_number_input.visible:
             self.form_state['check_number'] = self.check_number_input.value.strip() if self.check_number_input.value else ""
+        self.form_state['note'] = self.note_input.value.strip() if self.note_input.value else ""
         
         errors = self._validate_form()
         if errors:
@@ -339,6 +367,9 @@ class AddPaymentView:
         
         if self.form_state['payment_method'] == "צ'ק" and self.form_state['check_number']:
             payment_data["check_number"] = self.form_state['check_number']
+        
+        if self.form_state['note']:
+            payment_data["note"] = self.form_state['note']
 
         success = self.parent.data_manager.add_payment(self.student['id'],  payment_data)
         
@@ -349,8 +380,6 @@ class AddPaymentView:
             )
         else:
             self.dialog.show_error("שגיאה בשמירת התשלום")
-
-
 
     def _create_date_picker_button(self):
         """Create date picker button for better UX"""
@@ -432,4 +461,3 @@ class AddPaymentView:
             )
         except ValueError:
             return ft.Container()
-

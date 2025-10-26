@@ -8,6 +8,11 @@ class PaymentPage:
         self.page = page
         self.navigation_handler = navigation_handler
         self.payments_data = []
+        self.edit_dialog = None
+        self.delete_dialog = None
+        self.note_dialog = None
+        self.table_container = None
+        self.stats_section = None
         
         self.load_payments()
         
@@ -17,22 +22,27 @@ class PaymentPage:
             data_dir = ManageJSON.get_appdata_path() / "data"
             students_file = data_dir / "students.json"
             
+            self.payments_data = []
+            
             if students_file.exists():
                 with open(students_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     
-                    for student in data.get("students", []):
+                    for student_idx, student in enumerate(data.get("students", [])):
                         student_name = student.get("name", "")
                         student_groups = student.get("groups", [])
                         
-                        for payment in student.get("payments", []):
+                        for payment_idx, payment in enumerate(student.get("payments", [])):
                             payment_data = {
                                 "student_name": student_name,
+                                "student_idx": student_idx,
+                                "payment_idx": payment_idx,
                                 "amount": payment.get("amount", "0"),
                                 "date": payment.get("date", ""),
                                 "payment_method": payment.get("payment_method", ""),
                                 "groups": student_groups,
-                                "groups_display": ", ".join(student_groups)
+                                "groups_display": ", ".join(student_groups),
+                                "note": payment.get("note", "")
                             }
                             
                             if payment.get("check_number"):
@@ -42,6 +52,280 @@ class PaymentPage:
         except Exception as e:
             print(f"Error loading payments: {e}")
 
+    def save_payment_changes(self, student_idx, payment_idx, new_amount, new_method, new_check_number=None, new_note=None):
+        """Save changes to a payment (without date)"""
+        try:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            students_file = data_dir / "students.json"
+            
+            with open(students_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            payment = data["students"][student_idx]["payments"][payment_idx]
+            payment["amount"] = new_amount
+            payment["payment_method"] = new_method
+            
+            if new_method == "צ'ק" and new_check_number:
+                payment["check_number"] = new_check_number
+            elif "check_number" in payment and new_method != "צ'ק":
+                del payment["check_number"]
+            
+            if new_note:
+                payment["note"] = new_note
+            elif "note" in payment and not new_note:
+                del payment["note"]
+            
+            with open(students_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            return True
+        except Exception as e:
+            print(f"Error saving payment: {e}")
+            return False
+
+    def delete_payment(self, student_idx, payment_idx):
+        """Delete a payment"""
+        try:
+            data_dir = ManageJSON.get_appdata_path() / "data"
+            students_file = data_dir / "students.json"
+            
+            with open(students_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            
+            del data["students"][student_idx]["payments"][payment_idx]
+            
+            with open(students_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            
+            return True
+        except Exception as e:
+            print(f"Error deleting payment: {e}")
+            return False
+
+    def show_note_dialog(self, payment: Dict[str, Any]):
+        """Show dialog to view payment note"""
+        note_text = payment.get("note", "אין הערה")
+        
+        def close_dialog(e):
+            self.page.close(self.note_dialog)
+        
+        self.note_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("הערה לתשלום", rtl=True, text_align=ft.TextAlign.RIGHT, size=18, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text(f"תלמידה: {payment['student_name']}", rtl=True, weight=ft.FontWeight.BOLD, size=14),
+                            ft.Text(f"סכום: {payment['amount']}₪", rtl=True, size=13, color=ft.Colors.GREY_700),
+                            ft.Text(f"תאריך: {payment['date']}", rtl=True, size=13, color=ft.Colors.GREY_700),
+                        ], spacing=4),
+                        padding=ft.padding.all(12),
+                        bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE_600),
+                        border_radius=8
+                    ),
+                    ft.Divider(),
+                    ft.Container(
+                        content=ft.Text(
+                            note_text,
+                            rtl=True,
+                            size=14,
+                            color=ft.Colors.GREY_800,
+                            text_align=ft.TextAlign.RIGHT
+                        ),
+                        padding=ft.padding.all(12),
+                        bgcolor=ft.Colors.with_opacity(0.05, ft.Colors.GREY_400),
+                        border_radius=8,
+                        border=ft.border.all(1, ft.Colors.with_opacity(0.2, ft.Colors.GREY_400))
+                    ),
+                ], spacing=15, tight=True),
+                width=320,
+                padding=ft.padding.all(10)
+            ),
+            actions=[
+                ft.ElevatedButton("סגור", on_click=close_dialog, bgcolor=ft.Colors.BLUE_600, color=ft.Colors.WHITE),
+            ],
+            actions_alignment=ft.MainAxisAlignment.CENTER,
+        )
+        
+        self.page.open(self.note_dialog)
+
+    def show_edit_dialog(self, payment: Dict[str, Any]):
+        """Show dialog to edit payment"""
+        amount_field = ft.TextField(
+            label="סכום",
+            value=payment["amount"],
+            keyboard_type=ft.KeyboardType.NUMBER,
+            text_align=ft.TextAlign.RIGHT,
+            rtl=True,
+            width=250
+        )
+        
+        payment_method_dropdown = ft.Dropdown(
+            label="אמצעי תשלום",
+            value=payment["payment_method"],
+            options=[
+                ft.dropdown.Option("מזומן"),
+                ft.dropdown.Option("העברה בנקאית"),
+                ft.dropdown.Option("צ'ק"),
+                ft.dropdown.Option("אשראי"),
+            ],
+            alignment=ft.alignment.center_right,
+            width=250
+        )
+        
+        check_number_field = ft.TextField(
+            label="מספר צ'ק",
+            value=payment.get("check_number", ""),
+            visible=payment["payment_method"] == "צ'ק",
+            text_align=ft.TextAlign.RIGHT,
+            rtl=True,
+            width=250
+        )
+        
+        note_field = ft.TextField(
+            label="הערה",
+            value=payment.get("note", ""),
+            text_align=ft.TextAlign.RIGHT,
+            rtl=True,
+            width=250,
+            multiline=True,
+            min_lines=2,
+            max_lines=4
+        )
+        
+        def on_payment_method_change(e):
+            check_number_field.visible = payment_method_dropdown.value == "צ'ק"
+            self.edit_dialog.update()
+        
+        payment_method_dropdown.on_change = on_payment_method_change
+        
+        def save_changes(e):
+            if not amount_field.value:
+                return
+            
+            check_num = check_number_field.value if payment_method_dropdown.value == "צ'ק" else None
+            note_value = note_field.value.strip() if note_field.value else None
+            
+            success = self.save_payment_changes(
+                payment["student_idx"],
+                payment["payment_idx"],
+                amount_field.value,
+                payment_method_dropdown.value,
+                check_num,
+                note_value
+            )
+            
+            if success:
+                self.page.close(self.edit_dialog)
+                
+                self.load_payments()
+                
+                if self.table_container and self.table_container.content:
+                    self.table_container.content.controls = [self.create_payments_table()]
+                
+                if self.stats_section:
+                    self.stats_section.content = self.create_stats_section()
+                
+                self.page.update()
+        
+        def cancel_edit(e):
+            self.page.close(self.edit_dialog)
+        
+        self.edit_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("עריכת תשלום", rtl=True, text_align=ft.TextAlign.RIGHT, size=18, weight=ft.FontWeight.BOLD),
+            content=ft.Container(
+                content=ft.Column([
+                    ft.Container(
+                        content=ft.Column([
+                            ft.Text(f"תלמידה: {payment['student_name']}", rtl=True, weight=ft.FontWeight.BOLD, size=14),
+                            ft.Text(f"תאריך: {payment['date']}", rtl=True, size=13, color=ft.Colors.GREY_700),
+                        ], spacing=4),
+                        padding=ft.padding.all(12),
+                        bgcolor=ft.Colors.with_opacity(0.1, ft.Colors.BLUE_600),
+                        border_radius=8
+                    ),
+                    ft.Divider(),
+                    amount_field,
+                    payment_method_dropdown,
+                    check_number_field,
+                    note_field,
+                ], spacing=15, tight=True, scroll=ft.ScrollMode.AUTO),
+                width=320,
+                height=450,
+                padding=ft.padding.all(10)
+            ),
+            actions=[
+                ft.TextButton("ביטול", on_click=cancel_edit),
+                ft.ElevatedButton("שמור", on_click=save_changes, bgcolor=ft.Colors.BLUE_600, color=ft.Colors.WHITE),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        
+        self.page.open(self.edit_dialog)
+
+    def show_delete_dialog(self, payment: Dict[str, Any]):
+        """Show confirmation dialog to delete payment"""
+        def confirm_delete(e):
+            success = self.delete_payment(payment["student_idx"], payment["payment_idx"])
+            
+            if success:
+                self.page.close(self.delete_dialog)
+                
+                self.load_payments()
+                
+                if self.table_container and self.table_container.content:
+                    self.table_container.content.controls = [self.create_payments_table()]
+                
+                if self.stats_section:
+                    self.stats_section.content = self.create_stats_section()
+                
+                self.page.update()
+        
+        def cancel_delete(e):
+            self.page.close(self.delete_dialog)
+        
+        self.delete_dialog = ft.AlertDialog(
+            modal=True,
+            title=ft.Text("אישור מחיקה", rtl=True, text_align=ft.TextAlign.RIGHT),
+            content=ft.Container(
+                content=ft.Column([
+                    ft.Icon(ft.Icons.WARNING_AMBER, size=48, color=ft.Colors.ORANGE_600),
+                    ft.Text(
+                        f"האם אתה בטוח שברצונך למחוק את התשלום?",
+                        rtl=True,
+                        text_align=ft.TextAlign.CENTER,
+                        size=16
+                    ),
+                    ft.Divider(),
+                    ft.Text(f"תלמידה: {payment['student_name']}", rtl=True, weight=ft.FontWeight.BOLD),
+                    ft.Text(f"סכום: {payment['amount']}₪", rtl=True),
+                    ft.Text(f"תאריך: {payment['date']}", rtl=True),
+                    ft.Text(f"אמצעי תשלום: {payment['payment_method']}", rtl=True),
+                ], spacing=10, horizontal_alignment=ft.CrossAxisAlignment.CENTER, tight=True),
+                width=300,
+                padding=ft.padding.all(10)
+            ),
+            actions=[
+                ft.TextButton("ביטול", on_click=cancel_delete),
+                ft.ElevatedButton(
+                    "מחק", 
+                    on_click=confirm_delete, 
+                    bgcolor=ft.Colors.RED_600, 
+                    color=ft.Colors.WHITE
+                ),
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+            actions_padding=ft.padding.only(left=10, right=10, bottom=10, top=5),
+            content_padding=ft.padding.all(20),
+        )
+        
+        self.page.open(self.delete_dialog)
+
+    def refresh_view(self):
+        """Refresh the entire view - DEPRECATED, use direct update instead"""
+        pass
 
     def create_stats_card(self, title, value, icon, color, subtitle=""):
         """Create a modern statistics card"""
@@ -181,6 +465,13 @@ class PaymentPage:
                     ], alignment=ft.MainAxisAlignment.CENTER, spacing=4),
                     expand=2, **header_style
                 ),
+                ft.Container(
+                    content=ft.Row([
+                        ft.Icon(ft.Icons.SETTINGS, size=16, color=ft.Colors.WHITE70),
+                        ft.Text("פעולות", size=14, weight=ft.FontWeight.W_600, color=ft.Colors.WHITE)
+                    ], alignment=ft.MainAxisAlignment.CENTER, spacing=4),
+                    expand=2, **header_style
+                ),
             ], spacing=0),
             border_radius=ft.border_radius.only(top_left=12, top_right=12),
         )
@@ -218,6 +509,32 @@ class PaymentPage:
             "padding": ft.padding.symmetric(horizontal=16, vertical=16),
             "alignment": ft.alignment.center,
         }
+        
+        action_buttons = [
+            ft.IconButton(
+                icon=ft.Icons.EDIT,
+                icon_color=ft.Colors.BLUE_600,
+                icon_size=18,
+                tooltip="עריכה",
+                on_click=lambda e, p=payment: self.show_edit_dialog(p)
+            ),
+            ft.IconButton(
+                icon=ft.Icons.DELETE,
+                icon_color=ft.Colors.RED_600,
+                icon_size=18,
+                tooltip="מחיקה",
+                on_click=lambda e, p=payment: self.show_delete_dialog(p)
+            ),
+        ]
+        
+        if payment.get("note"):
+            action_buttons.insert(0, ft.IconButton(
+                icon=ft.Icons.NOTE_OUTLINED,
+                icon_color=ft.Colors.AMBER_700,
+                icon_size=18,
+                tooltip="צפה בהערה",
+                on_click=lambda e, p=payment: self.show_note_dialog(p)
+            ))
 
         return ft.Container(
             content=ft.Row([
@@ -290,10 +607,17 @@ class PaymentPage:
                     ),
                     expand=2, **cell_style
                 ),
+                ft.Container(
+                    content=ft.Row(
+                        action_buttons,
+                        alignment=ft.MainAxisAlignment.CENTER, 
+                        spacing=0
+                    ),
+                    expand=2, **cell_style
+                ),
             ], spacing=0),
-            border=ft.border.only(bottom=ft.BorderSide(1, ft.Colors.with_opacity(0.1, ft.Colors.GREY_400))),
+            border=ft.border.only(bottom=ft.BorderSide(0.7, ft.Colors.with_opacity(0.1, ft.Colors.GREY_400))),
         )
-
 
     def create_empty_state(self):
         """Create empty state when no payments exist"""
@@ -375,13 +699,13 @@ class PaymentPage:
             alignment=ft.alignment.center
         )
 
-        stats_section = ft.Container(
+        self.stats_section = ft.Container(
             content=self.create_stats_section(),
             margin=ft.margin.only(bottom=32),
             alignment=ft.alignment.center
         )
 
-        table_container = ft.Container(
+        self.table_container = ft.Container(
             content=ft.Column([
                 self.create_payments_table(),
             ], scroll=ft.ScrollMode.AUTO),
@@ -423,8 +747,8 @@ class PaymentPage:
         main_content = ft.Container(
             content=ft.Column([
                 title_container,
-                stats_section,
-                table_container,
+                self.stats_section,
+                self.table_container,
                 back_button,
             ], 
             spacing=0,
@@ -434,5 +758,5 @@ class PaymentPage:
             expand=True,
             bgcolor=ft.Colors.with_opacity(0.3, ft.Colors.BLUE_GREY_50),
         )
-
+        
         return main_content
